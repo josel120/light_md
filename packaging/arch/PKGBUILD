@@ -4,7 +4,7 @@
 # sha256sums entry do not exist yet — keep sha256sums=('SKIP') until a release
 # is tagged, or build from a local source tree instead.
 pkgname=light_md
-pkgver=1.1.0
+pkgver=1.2.0
 pkgrel=1
 pkgdesc="Lightweight Markdown editor with live preview"
 arch=('x86_64')
