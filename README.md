@@ -18,9 +18,13 @@ Write on the left, see the formatted result on the right. Format with the button
 - Button visibility and the last Edit/Reader view are remembered across restarts and when opening another file.
 - **Options** menu in everyday words: New, Open, Save, Format, Theme, Help — every item has a shortcut.
 - Open and save `.md` documents, also by dragging them onto the window or using "Open with" from the file manager.
+- Find and replace words (Ctrl+F, Ctrl+H), and reopen your latest documents from the Recent menu.
+- Checklists, plus an Insert menu for pictures, tables, code blocks and separator lines. Pictures next to your document show up in the preview and the PDF.
 - Export to PDF and print: the result looks just like the reading pane.
 - Word count and an unsaved-changes warning, including when closing the window.
 - Themes: **System** (desktop default), **Minimal** (quiet light look), **Omarchy** (live desktop theme on Omarchy Linux only). Windows and macOS keep **System** by default.
+
+See [ROADMAP.md](ROADMAP.md) for what is done and what is coming next.
 
 ## Keyboard shortcuts
 
@@ -34,7 +38,10 @@ Write on the left, see the formatted result on the right. Format with the button
 | Undo / Redo | Ctrl+Z / Ctrl+Shift+Z (or Ctrl+Y) |
 | Bold / Italic / Link | Ctrl+B / Ctrl+I / Ctrl+K |
 | Big title / Subtitle | Ctrl+1 / Ctrl+2 |
-| Bullet / Numbered / Quote | Ctrl+Shift+8 / Ctrl+Shift+7 / Ctrl+Shift+. |
+| Bullet / Numbered / Checklist / Quote | Ctrl+Shift+8 / Ctrl+Shift+7 / Ctrl+Shift+9 / Ctrl+Shift+. |
+| Insert picture / table / code block / separator line | Ctrl+Shift+P / Ctrl+Shift+T / Ctrl+Shift+C / Ctrl+Shift+L |
+| Find / Replace | Ctrl+F / Ctrl+H (Esc closes the find bar) |
+| Next / previous match | F3 / Shift+F3 |
 | Theme System / Minimal / Omarchy | Ctrl+Shift+1 / Ctrl+Shift+2 / Ctrl+Shift+3 |
 | Help | F1 |
 
