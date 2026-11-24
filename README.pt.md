@@ -22,9 +22,30 @@ Escreva à esquerda e veja o resultado formatado à direita, na hora. Nunca usou
 - Exporta para PDF e imprime: o resultado fica igual ao painel da direita.
 - Desfazer e refazer, além de atalhos de teclado (Ctrl+S, Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+1, Ctrl+2).
 - Contador de palavras e aviso de alterações não salvas, inclusive ao fechar a janela.
+- Seletor de tema: **System** (área de trabalho), **Minimal** (visual claro e sóbrio), **Omarchy** (acompanha o tema Omarchy no Linux).
+- Atalhos: **Ctrl+Shift+B** mostrar ou ocultar os botões, **Ctrl+E** editar, **Ctrl+R** / **Esc** só leitura; o restante está em Options (tabela em [README.md](README.md)).
 - Botão Help (ajuda) com um guia curto.
 
 Veja [ROADMAP.md](ROADMAP.md) (em inglês) para saber o que já está pronto e o que vem a seguir.
+
+## Compilar no Linux
+
+É preciso ter o Qt 6 (`Widgets` e `PrintSupport`). No Arch / [Omarchy](https://omarchy.org/):
+
+```bash
+sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-wayland
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+./build/light_md
+```
+
+Para instalar no seu usuário (binário, entrada `.desktop` e ícone no lançador):
+
+```bash
+cmake --install build --prefix ~/.local
+```
+
+Na primeira execução no Omarchy, o tema padrão é **Omarchy** e atualiza ao trocar o tema. Nos demais sistemas, começa em **System**. A escolha é lembrada.
 
 ## Compilar (Windows, com Qt 6 e MinGW)
 
@@ -52,3 +73,5 @@ Copie a pasta `dist` inteira e abra `dist\bin\light_md.exe`.
 ## Licença
 
 MIT
+
+O acompanhamento do tema Omarchy segue a abordagem do Omacut (MIT, David Heinemeier Hansson).

@@ -14,18 +14,25 @@ Tick a box (`[x]`) and move the line to **Done** when a feature is finished.
 - [x] Word count and unsaved-changes warning (also when closing the window)
 - [x] Help button with a short guide
 
-### Version 1.1
-- [x] Find and replace (Ctrl+F, Ctrl+H, F3 / Shift+F3, match case, replace all)
+### Version 1.1 (contributed by @debugsito)
+- [x] Linux support: build instructions, `.desktop` entry, icon, Arch `PKGBUILD` template
+- [x] Themes: System, Minimal and Omarchy (follows the Omarchy desktop theme live)
+- [x] Options menu with every action and its shortcut
+- [x] Optional Reader mode (Ctrl+E / Ctrl+R / Esc) and Show buttons toggle (Ctrl+Shift+B), both remembered
+- [x] Safe saving with `QSaveFile` (the original is kept if saving fails)
+
+### Version 1.2
+- [x] Find and replace (Ctrl+F, Ctrl+H, F3 / Shift+F3, match case, replace all; Esc closes the bar)
 - [x] Recent documents menu (last 10, removes files that no longer exist)
 - [x] App icon on the window, the taskbar and the `.exe`
-- [x] Checklist button (`- [ ]`)
-- [x] Insert menu: picture, table, code block, separator line
+- [x] Checklist button (`- [ ]`, Ctrl+Shift+9)
+- [x] Insert menu: picture, table, code block, separator line (Ctrl+Shift+P / T / C / L)
 - [x] Pictures next to the document show up in the preview and the PDF
 
 ## Next
 
 - [ ] Synchronized scrolling between the editor and the preview
-- [ ] Dark mode (follow Windows, with a manual switch)
+- [ ] Dark theme on Windows and macOS (Omarchy already brings one on Linux)
 - [ ] Reopen the last document on start and remember the cursor position
 - [ ] Autosave and recovery after a crash
 - [ ] Syntax highlighting in the editor (titles bigger, bold in bold, links in color)
@@ -47,4 +54,4 @@ Tick a box (`[x]`) and move the line to **Done** when a feature is finished.
 - [ ] Automated tests for the formatting functions (Qt Test)
 - [ ] GitHub Actions: build on every push and attach the zip to each release
 - [ ] Windows installer (Inno Setup or MSIX) that registers `.md` files
-- [ ] Linux and macOS builds
+- [ ] macOS build and app bundle tested; first tagged release for the Arch `PKGBUILD`
