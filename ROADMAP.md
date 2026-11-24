@@ -54,4 +54,4 @@ Tick a box (`[x]`) and move the line to **Done** when a feature is finished.
 - [ ] Automated tests for the formatting functions (Qt Test)
 - [ ] GitHub Actions: build on every push and attach the zip to each release
 - [ ] Windows installer (Inno Setup or MSIX) that registers `.md` files
-- [ ] macOS build and app bundle tested; first tagged release for the Arch `PKGBUILD`
+- [ ] macOS build and app bundle tested (needs a Mac or a macOS CI runner)
