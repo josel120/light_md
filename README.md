@@ -11,7 +11,7 @@ Write on the left, see the formatted result on the right. Format with the button
 **[Download light_md](https://github.com/josel120/light_md/releases/latest)**:
 
 - **Windows**: download the `windows-x64.zip`, unzip it and open `bin\light_md.exe`. Nothing to install.
-- **macOS** (12 or later, Apple Silicon and Intel; from version 1.3): download the `macos.zip`, unzip it and drag **light_md** to Applications. The app is not signed by Apple yet, so the first time macOS blocks it: open **System Settings → Privacy & Security** and click **Open Anyway**.
+- **macOS** (13 Ventura or later, Apple Silicon and Intel; from version 1.3): download the `macos.zip`, unzip it and drag **light_md** to Applications. The app is not signed by Apple yet, so the first time macOS blocks it: open **System Settings → Privacy & Security** and click **Open Anyway**.
 - **Linux**: build from source (below) or use the Arch `PKGBUILD`.
 
 ## What it does
