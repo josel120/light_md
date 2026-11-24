@@ -22,6 +22,8 @@ Escribe a la izquierda y ve el resultado formateado a la derecha, al instante. �
 - Exporta a PDF e imprime: el resultado se ve igual que el panel derecho.
 - Deshacer y rehacer, y atajos de teclado (Ctrl+S, Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+1, Ctrl+2).
 - Contador de palabras y aviso de cambios sin guardar, también al cerrar la ventana.
+- Botón **Check for updates** (buscar actualizaciones): avisa cuando hay una versión nueva y descarga el archivo adecuado para tu sistema.
+- **macOS** (12 o posterior): desde la versión 1.3 hay un `macos.zip` en cada release. Descomprímelo y arrastra **light_md** a Aplicaciones. Como aún no está firmada por Apple, la primera vez macOS la bloquea: abre **Ajustes del Sistema → Privacidad y seguridad** y pulsa **Abrir igualmente**.
 - Selector de tema: **System** (escritorio), **Minimal** (aspecto claro y sobrio), **Omarchy** (sigue el tema Omarchy en Linux).
 - Atajos: **Ctrl+Shift+B** mostrar u ocultar los botones, **Ctrl+E** editar, **Ctrl+R** / **Esc** solo lectura; el resto está en Options (ver tabla en [README.md](README.md)).
 - Botón Help (ayuda) con una guía corta.

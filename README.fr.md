@@ -22,6 +22,8 @@ Un éditeur Markdown léger en C++ et Qt 6, ouvert à tous les utilisateurs.
 - Export en PDF et impression : le résultat est identique au volet de droite.
 - Annuler et rétablir, plus des raccourcis clavier (Ctrl+S, Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+1, Ctrl+2).
 - Compteur de mots et avertissement en cas de modifications non enregistrées, y compris à la fermeture de la fenêtre.
+- Bouton **Check for updates** (rechercher des mises à jour) : vous prévient quand une nouvelle version sort et télécharge le bon fichier pour votre système.
+- **macOS** (12 ou plus récent) : à partir de la version 1.3, chaque release contient un `macos.zip`. Décompressez-le et glissez **light_md** dans Applications. Comme l'app n'est pas encore signée par Apple, macOS la bloque la première fois : ouvrez **Réglages Système → Confidentialité et sécurité** et cliquez sur **Ouvrir quand même**.
 - Choix du thème : **System** (bureau), **Minimal** (apparence claire et sobre), **Omarchy** (suit le thème Omarchy sous Linux).
 - Raccourcis : **Ctrl+Shift+B** afficher ou masquer les boutons, **Ctrl+E** éditer, **Ctrl+R** / **Esc** lecture seule ; le reste est sous Options (tableau dans [README.md](README.md)).
 - Un bouton Help (aide) avec un guide court.

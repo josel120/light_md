@@ -29,6 +29,11 @@ Tick a box (`[x]`) and move the line to **Done** when a feature is finished.
 - [x] Insert menu: picture, table, code block, separator line (Ctrl+Shift+P / T / C / L)
 - [x] Pictures next to the document show up in the preview and the PDF
 
+### Version 1.3
+- [x] macOS app: universal (Apple Silicon and Intel), icon, opens `.md` files from Finder
+- [x] GitHub Actions: builds Windows, macOS and Linux on every push and attaches the Windows and macOS packages to each release
+- [x] Check for updates button (downloads the right file for your system)
+
 ## Next
 
 - [ ] Synchronized scrolling between the editor and the preview
@@ -52,6 +57,6 @@ Tick a box (`[x]`) and move the line to **Done** when a feature is finished.
 
 - [ ] Split `src/main.cpp` into smaller files (window, formatting actions, find bar)
 - [ ] Automated tests for the formatting functions (Qt Test)
-- [ ] GitHub Actions: build on every push and attach the zip to each release
 - [ ] Windows installer (Inno Setup or MSIX) that registers `.md` files
-- [ ] macOS build and app bundle tested (needs a Mac or a macOS CI runner)
+- [ ] Test the macOS app on a real Mac (it is built in CI but nobody has tried it yet)
+- [ ] Sign and notarize the macOS app with an Apple Developer ID, so it opens without the security warning

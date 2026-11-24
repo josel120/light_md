@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
-project(light_md VERSION 1.2.0 LANGUAGES CXX)
+project(light_md VERSION 1.3.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets PrintSupport)
+find_package(Qt6 REQUIRED COMPONENTS Widgets PrintSupport Network)
 
 qt_standard_project_setup()
 
@@ -23,8 +23,22 @@ if(WIN32)
     target_sources(light_md PRIVATE icons/light_md.rc)
 endif()
 
+# macOS app bundle: icon, version and the .md file association (Info.plist).
+if(APPLE)
+    target_sources(light_md PRIVATE icons/light_md.icns)
+    set_source_files_properties(icons/light_md.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    set_target_properties(light_md PROPERTIES
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/Info.plist.in
+        MACOSX_BUNDLE_BUNDLE_NAME light_md
+        MACOSX_BUNDLE_GUI_IDENTIFIER io.github.josel120.light_md
+        MACOSX_BUNDLE_ICON_FILE light_md.icns
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION}
+        MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+    )
+endif()
+
 target_include_directories(light_md PRIVATE src)
-target_link_libraries(light_md PRIVATE Qt6::Widgets Qt6::PrintSupport)
+target_link_libraries(light_md PRIVATE Qt6::Widgets Qt6::PrintSupport Qt6::Network)
 target_compile_definitions(light_md PRIVATE LIGHT_MD_VERSION="${PROJECT_VERSION}")
 
 set_target_properties(light_md PROPERTIES

@@ -8,7 +8,11 @@ Write on the left, see the formatted result on the right. Format with the button
 
 ![light_md: the writing pane on the left and the formatted result on the right](docs/screenshot.png)
 
-**[Download light_md for Windows](https://github.com/josel120/light_md/releases/latest)**: unzip it and open `bin\light_md.exe`. Nothing to install.
+**[Download light_md](https://github.com/josel120/light_md/releases/latest)**:
+
+- **Windows**: download the `windows-x64.zip`, unzip it and open `bin\light_md.exe`. Nothing to install.
+- **macOS** (12 or later, Apple Silicon and Intel; from version 1.3): download the `macos.zip`, unzip it and drag **light_md** to Applications. The app is not signed by Apple yet, so the first time macOS blocks it: open **System Settings → Privacy & Security** and click **Open Anyway**.
+- **Linux**: build from source (below) or use the Arch `PKGBUILD`.
 
 ## What it does
 
@@ -22,6 +26,7 @@ Write on the left, see the formatted result on the right. Format with the button
 - Checklists, plus an Insert menu for pictures, tables, code blocks and separator lines. Pictures next to your document show up in the preview and the PDF.
 - Export to PDF and print: the result looks just like the reading pane.
 - Word count and an unsaved-changes warning, including when closing the window.
+- **Check for updates** button: tells you when a new version is out and downloads the right file for your system.
 - Themes: **System** (desktop default), **Minimal** (quiet light look), **Omarchy** (live desktop theme on Omarchy Linux only). Windows and macOS keep **System** by default.
 
 See [ROADMAP.md](ROADMAP.md) for what is done and what is coming next.
@@ -47,9 +52,21 @@ See [ROADMAP.md](ROADMAP.md) for what is done and what is coming next.
 
 On macOS, use **Cmd** instead of Ctrl where the platform expects it (standard Qt shortcuts).
 
+## Build on macOS
+
+Install Qt 6 (for example with the [Qt online installer](https://www.qt.io/download-qt-installer) or `brew install qt`) and the Xcode command line tools, then:
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+cmake --build build
+cmake --install build --prefix dist   # creates dist/light_md.app with Qt included
+```
+
+The macOS and Windows packages of each release are built automatically by GitHub Actions (`.github/workflows/build.yml`).
+
 ## Build on Linux
 
-Needs Qt 6 development packages (`Widgets` and `PrintSupport`). On Arch / [Omarchy](https://omarchy.org/):
+Needs Qt 6 development packages (`Widgets`, `PrintSupport` and `Network`). On Arch / [Omarchy](https://omarchy.org/):
 
 ```bash
 sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-wayland
