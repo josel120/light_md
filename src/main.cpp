@@ -50,6 +50,7 @@
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QVersionNumber>
+#include <QWheelEvent>
 #include <QWidget>
 
 class MainWindow : public QMainWindow
@@ -81,12 +82,10 @@ public:
         m_editor->viewport()->installEventFilter(this);
         m_preview = new QTextBrowser(m_splitter);
         m_preview->setOpenExternalLinks(true);
-        QFont readFont = m_preview->font();
-        readFont.setPointSizeF(readFont.pointSizeF() + 2);
-        m_preview->setFont(readFont);
-        QFont writeFont = m_editor->font();
-        writeFont.setPointSizeF(writeFont.pointSizeF() + 1);
-        m_editor->setFont(writeFont);
+        // Base sizes; the user's bigger/smaller text setting is added on top (see applyTextSize).
+        m_previewBaseSize = m_preview->font().pointSizeF() + 2;
+        m_editorBaseSize = m_editor->font().pointSizeF() + 1;
+        m_preview->viewport()->installEventFilter(this);
         m_splitter->addWidget(m_editor);
         m_splitter->addWidget(m_preview);
         m_splitter->setStretchFactor(0, 1);
@@ -111,6 +110,8 @@ public:
         connect(&m_statusTimer, &QTimer::timeout, this, [this] { updateStatus(); });
 
         connect(m_editor, &QPlainTextEdit::textChanged, this, [this] {
+            // Any edit (typed, pasted or from a button) puts the writing pane in charge of scrolling.
+            m_previewLeads = false;
             m_previewTimer.start();
             m_statusTimer.start();
         });
@@ -128,10 +129,10 @@ public:
         connect(previewBar, &QScrollBar::valueChanged, this, [this, editorBar, previewBar] {
             syncScroll(previewBar, editorBar);
         });
-        // The preview's height changes after it re-renders or resizes; follow the editor again.
-        connect(previewBar, &QScrollBar::rangeChanged, this, [this, editorBar, previewBar] {
-            syncScroll(editorBar, previewBar);
-        });
+        // Either pane's height changes after a re-render, a resize or a new text size; realign the
+        // other pane to whichever one the user is working in.
+        connect(previewBar, &QScrollBar::rangeChanged, this, [this] { syncFromLeader(); });
+        connect(editorBar, &QScrollBar::rangeChanged, this, [this] { syncFromLeader(); });
 
         QSettings settings;
         const QByteArray geometry = settings.value(QStringLiteral("geometry")).toByteArray();
@@ -143,6 +144,8 @@ public:
         const bool editMode = settings.value(QStringLiteral("ui/editMode"), true).toBool();
         m_syncScroll = settings.value(QStringLiteral("ui/syncScroll"), true).toBool();
         m_syncScrollAction->setChecked(m_syncScroll);
+        m_textSize = qBound(kMinTextSize, settings.value(QStringLiteral("ui/textSize"), 0).toInt(), kMaxTextSize);
+        applyTextSize();
 
         // A file given on the command line wins; otherwise pick up the document open last time.
         QString startFile = initialFile;
@@ -255,6 +258,32 @@ protected:
                 loadFile(path);
             return true;
         }
+        // Remember which pane the user last scrolled, clicked or typed in. Only that pane drives the
+        // other one, so the preview moving by itself (after a refresh or a resize) never drags the editor.
+        if (event->type() == QEvent::Wheel || event->type() == QEvent::MouseButtonPress
+            || event->type() == QEvent::KeyPress) {
+            if (auto *widget = qobject_cast<QWidget *>(watched)) {
+                if (widget == m_preview || m_preview->isAncestorOf(widget))
+                    m_previewLeads = true;
+                else if (widget == m_editor || m_editor->isAncestorOf(widget))
+                    m_previewLeads = false;
+            }
+        }
+        // Ctrl + mouse wheel changes the text size of both panes together (and remembers it),
+        // instead of Qt's built-in zoom, which only touches one pane and is forgotten.
+        if (event->type() == QEvent::Wheel
+            && (watched == m_editor->viewport() || watched == m_preview->viewport())) {
+            auto *wheel = static_cast<QWheelEvent *>(event);
+            if (wheel->modifiers() & Qt::ControlModifier) {
+                // Touchpads send many small steps; add them up to whole wheel notches.
+                m_wheelZoom += wheel->angleDelta().y();
+                const int steps = m_wheelZoom / 120;
+                m_wheelZoom -= steps * 120;
+                if (steps != 0)
+                    changeTextSize(steps);
+                return true;
+            }
+        }
         if (watched == m_editor->viewport()) {
             if (event->type() == QEvent::DragEnter || event->type() == QEvent::DragMove) {
                 auto *drag = static_cast<QDragMoveEvent *>(event);
@@ -364,6 +393,20 @@ private:
                                        QKeySequence());
         m_syncScrollAction->setCheckable(true);
         m_syncScrollAction->setChecked(true);
+
+        auto *textSizeMenu = options->addMenu(QStringLiteral("&Text size"));
+        auto *actBigger = addOption(textSizeMenu, QStringLiteral("&Bigger text"),
+                                    QStringLiteral("Make the text bigger in both panes"), QKeySequence::ZoomIn);
+        // Ctrl+= too, so it works without Shift on keyboards where + needs Shift.
+        actBigger->setShortcuts({QKeySequence(QKeySequence::ZoomIn), QKeySequence(QStringLiteral("Ctrl+="))});
+        auto *actSmaller = addOption(textSizeMenu, QStringLiteral("&Smaller text"),
+                                     QStringLiteral("Make the text smaller in both panes"), QKeySequence::ZoomOut);
+        auto *actNormalSize = addOption(textSizeMenu, QStringLiteral("&Normal size"),
+                                        QStringLiteral("Go back to the normal text size"),
+                                        QKeySequence(QStringLiteral("Ctrl+0")));
+        connect(actBigger, &QAction::triggered, this, [this] { changeTextSize(1); });
+        connect(actSmaller, &QAction::triggered, this, [this] { changeTextSize(-1); });
+        connect(actNormalSize, &QAction::triggered, this, [this] { changeTextSize(-m_textSize); });
 
         options->addSeparator();
         m_formatMenu = options->addMenu(QStringLiteral("&Format"));
@@ -498,7 +541,7 @@ private:
         connect(m_syncScrollAction, &QAction::toggled, this, [this](bool on) {
             m_syncScroll = on;
             QSettings().setValue(QStringLiteral("ui/syncScroll"), on);
-            syncScroll(m_editor->verticalScrollBar(), m_preview->verticalScrollBar());
+            syncFromLeader();
         });
 
         connect(actUndo, &QAction::triggered, m_editor, &QPlainTextEdit::undo);
@@ -618,6 +661,12 @@ private:
                 m_formatBar->setVisible(m_showButtons && editing);
             return;
         }
+        // Coming back from Reader, keep the part the user was reading: the preview leads.
+        // (Not at startup, before the window shows, where restorePosition decides.)
+        const bool fromReader = editing && isVisible() && !m_editor->isVisible();
+        const double readingRatio = scrollRatio(m_preview->verticalScrollBar());
+        if (fromReader)
+            m_previewLeads = true;
         m_editMode = editing;
         m_editor->setVisible(editing);
         if (m_formatMenu)
@@ -632,11 +681,43 @@ private:
             if (m_splitter->sizes().value(0, 0) < 80)
                 m_splitter->setSizes({550, 550});
             m_editor->setFocus(Qt::ShortcutFocusReason);
-            syncScroll(m_editor->verticalScrollBar(), m_preview->verticalScrollBar());
+            if (fromReader) {
+                // Showing the editor narrows the preview and re-wraps it; realign once the layout settles.
+                QTimer::singleShot(0, this, [this, readingRatio] {
+                    if (!m_editMode)
+                        return;
+                    setScrollRatio(m_preview->verticalScrollBar(), readingRatio);
+                    syncFromLeader();
+                });
+            } else {
+                syncFromLeader();
+            }
         } else {
             m_preview->setFocus(Qt::OtherFocusReason);
         }
         QSettings().setValue(QStringLiteral("ui/editMode"), editing);
+        updateStatus();
+    }
+
+    void changeTextSize(int steps)
+    {
+        const int size = qBound(kMinTextSize, m_textSize + steps, kMaxTextSize);
+        if (size == m_textSize)
+            return;
+        m_textSize = size;
+        QSettings().setValue(QStringLiteral("ui/textSize"), m_textSize);
+        applyTextSize();
+    }
+
+    // Each step is one point on top of the base size; titles in the preview grow with it.
+    void applyTextSize()
+    {
+        QFont writeFont = m_editor->font();
+        writeFont.setPointSizeF(m_editorBaseSize + m_textSize);
+        m_editor->setFont(writeFont);
+        QFont readFont = m_preview->font();
+        readFont.setPointSizeF(m_previewBaseSize + m_textSize);
+        m_preview->setFont(readFont);
         updateStatus();
     }
 
@@ -651,18 +732,40 @@ private:
         return QString();
     }
 
-    // Moves `to` to the same relative position as `from`. Only while both panes are showing.
+    static double scrollRatio(const QScrollBar *bar)
+    {
+        return bar->maximum() > bar->minimum()
+                   ? double(bar->value() - bar->minimum()) / (bar->maximum() - bar->minimum())
+                   : 0.0;
+    }
+
+    static void setScrollRatio(QScrollBar *bar, double ratio)
+    {
+        bar->setValue(bar->minimum() + qRound(ratio * (bar->maximum() - bar->minimum())));
+    }
+
+    // Moves `to` to the same relative position as `from`. Only while both panes are showing, and
+    // only from the pane the user is working in (see m_previewLeads).
     void syncScroll(QScrollBar *from, QScrollBar *to)
     {
         if (!m_syncScroll || m_syncingScroll || !m_editor->isVisible())
             return;
-        const double ratio = from->maximum() > from->minimum()
-                                 ? double(from->value() - from->minimum()) / (from->maximum() - from->minimum())
-                                 : 0.0;
+        if ((from == m_preview->verticalScrollBar()) != m_previewLeads)
+            return;
         // The guard stops `to` from scrolling `from` back and making the panes jitter.
         m_syncingScroll = true;
-        to->setValue(to->minimum() + qRound(ratio * (to->maximum() - to->minimum())));
+        setScrollRatio(to, scrollRatio(from));
         m_syncingScroll = false;
+    }
+
+    void syncFromLeader()
+    {
+        QScrollBar *editorBar = m_editor->verticalScrollBar();
+        QScrollBar *previewBar = m_preview->verticalScrollBar();
+        if (m_previewLeads)
+            syncScroll(previewBar, editorBar);
+        else
+            syncScroll(editorBar, previewBar);
     }
 
     void updatePreview()
@@ -672,7 +775,7 @@ private:
         const int scroll = bar->value();
         m_preview->setMarkdown(m_editor->toPlainText());
         bar->setValue(scroll);
-        syncScroll(m_editor->verticalScrollBar(), bar);
+        syncFromLeader();
     }
 
     void updateStatus()
@@ -682,8 +785,13 @@ private:
         const bool modified = m_editor->document()->isModified();
         const QString mode = m_editMode ? QStringLiteral("Editing") : QStringLiteral("Reading");
         const QString chrome = m_showButtons ? QStringLiteral("Buttons") : QStringLiteral("Minimal");
-        m_status->setText(QStringLiteral("%1 · %2    Words: %3    File: %4%5")
-                              .arg(mode, chrome)
+        // Only mentioned when it differs from normal, so the status line stays short.
+        const QString textSize =
+            m_textSize == 0 ? QString()
+                            : QStringLiteral(" · Text %1%").arg(qRound(100.0 * (m_editorBaseSize + m_textSize)
+                                                                       / m_editorBaseSize));
+        m_status->setText(QStringLiteral("%1 · %2%3    Words: %4    File: %5%6")
+                              .arg(mode, chrome, textSize)
                               .arg(words)
                               .arg(m_filePath.isEmpty() ? QStringLiteral("(not saved)")
                                                         : QDir::toNativeSeparators(m_filePath))
@@ -999,17 +1107,20 @@ private:
 
     static QString cleanPath(const QString &path) { return QDir::cleanPath(QFileInfo(path).absoluteFilePath()); }
 
-    // Saves where the current document was left: the cursor and how far the reading pane was scrolled.
+    // Saves where the current document was left: the cursor, and how far each pane was scrolled
+    // (scrolling does not move the cursor, so the visible part can be elsewhere).
     void rememberPosition()
     {
         if (m_filePath.isEmpty())
             return;
         QSettings settings;
         QVariantMap all = settings.value(QStringLiteral("session/positions")).toMap();
-        const QScrollBar *bar = m_preview->verticalScrollBar();
-        const double scroll = bar->maximum() > 0 ? double(bar->value()) / bar->maximum() : 0.0;
-        all.insert(cleanPath(m_filePath), QVariantMap{{QStringLiteral("cursor"), m_editor->textCursor().position()},
-                                                      {QStringLiteral("scroll"), scroll}});
+        QVariantMap spot{{QStringLiteral("cursor"), m_editor->textCursor().position()},
+                         {QStringLiteral("scroll"), scrollRatio(m_preview->verticalScrollBar())}};
+        // A hidden writing pane (Reader mode) has a stale position; the reading pane is what counts then.
+        if (m_editor->isVisible())
+            spot.insert(QStringLiteral("editorScroll"), scrollRatio(m_editor->verticalScrollBar()));
+        all.insert(cleanPath(m_filePath), spot);
         // Only documents still in the Recent list are worth remembering; this keeps the list short.
         const QStringList recent = recentFiles();
         for (auto it = all.begin(); it != all.end();) {
@@ -1032,14 +1143,25 @@ private:
         cursor.setPosition(qBound(0, saved.value(QStringLiteral("cursor")).toInt(), last));
         m_editor->setTextCursor(cursor);
         const double scroll = saved.value(QStringLiteral("scroll")).toDouble();
+        const bool hasEditorScroll = saved.contains(QStringLiteral("editorScroll"));
+        const double editorScroll = saved.value(QStringLiteral("editorScroll")).toDouble();
         // Wait for the window to be laid out, so both panes know their height before scrolling.
-        QTimer::singleShot(0, this, [this, scroll] {
-            m_editor->centerCursor();
-            // With sync on and both panes showing, the preview already follows the editor.
-            if (!m_syncScroll || !m_editor->isVisible()) {
-                QScrollBar *bar = m_preview->verticalScrollBar();
-                bar->setValue(qRound(scroll * bar->maximum()));
+        QTimer::singleShot(0, this, [this, scroll, hasEditorScroll, editorScroll] {
+            QScrollBar *editorBar = m_editor->verticalScrollBar();
+            QScrollBar *previewBar = m_preview->verticalScrollBar();
+            if (m_editor->isVisible() && hasEditorScroll) {
+                m_previewLeads = false;
+                setScrollRatio(editorBar, editorScroll);
+                if (!m_syncScroll)
+                    setScrollRatio(previewBar, scroll);
+            } else {
+                // Left in Reader mode (or saved by an older version): the reading position leads.
+                m_previewLeads = true;
+                setScrollRatio(previewBar, scroll);
+                if (!m_syncScroll)
+                    m_editor->centerCursor();
             }
+            syncFromLeader();
         });
     }
 
@@ -1331,7 +1453,8 @@ private:
                 "Ctrl+Shift+B — Show / hide buttons<br>"
                 "Ctrl+E — Edit document (show writing pane)<br>"
                 "Ctrl+R or Esc — Read only<br>"
-                "<i>Sync scrolling</i> (Options) — the preview follows the writing pane</p>"
+                "<i>Sync scrolling</i> (Options) — the preview follows the writing pane<br>"
+                "Ctrl++ / Ctrl+- / Ctrl+0 — Bigger / smaller / normal text (or Ctrl + mouse wheel)</p>"
                 "<p><b>File</b><br>"
                 "Ctrl+N New · Ctrl+O Open · Ctrl+S Save · Ctrl+Shift+S Save as<br>"
                 "Ctrl+Shift+E Export PDF · Ctrl+P Print</p>"
@@ -1383,6 +1506,15 @@ private:
     bool m_showButtons = true;
     bool m_syncScroll = true;
     bool m_syncingScroll = false;
+    // True when the user last scrolled, clicked or typed in the reading pane; that pane then
+    // drives synchronized scrolling. Otherwise the writing pane does.
+    bool m_previewLeads = false;
+    static constexpr int kMinTextSize = -5;
+    static constexpr int kMaxTextSize = 20;
+    int m_textSize = 0;
+    int m_wheelZoom = 0;
+    qreal m_editorBaseSize = 10;
+    qreal m_previewBaseSize = 11;
 };
 
 static ThemeManager::Kind loadInitialTheme()

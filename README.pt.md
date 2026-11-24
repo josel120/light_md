@@ -22,6 +22,7 @@ Escreva à esquerda e veja o resultado formatado à direita, na hora. Nunca usou
 - Exporta para PDF e imprime: o resultado fica igual ao painel da direita.
 - Desfazer e refazer, além de atalhos de teclado (Ctrl+S, Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+1, Ctrl+2).
 - Ao abrir o app, volta ao último documento exatamente onde você parou (cursor e rolagem), e lembra esse ponto em cada documento recente.
+- Texto maior ou menor nos dois painéis com Ctrl + roda do mouse ou Ctrl+Mais / Ctrl+Menos (Ctrl+0 volta ao tamanho normal). O tamanho é lembrado.
 - Contador de palavras e aviso de alterações não salvas, inclusive ao fechar a janela.
 - Botão **Check for updates** (procurar atualizações): avisa quando há uma versão nova e baixa o arquivo certo para o seu sistema.
 - **macOS** (13 Ventura ou posterior): a partir da versão 1.3 cada release traz um `macos.zip`. Descompacte e arraste o **light_md** para Aplicativos. Como ainda não é assinado pela Apple, na primeira vez o macOS o bloqueia: abra **Ajustes do Sistema → Privacidade e Segurança** e clique em **Abrir Mesmo Assim**.

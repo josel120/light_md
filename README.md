@@ -26,6 +26,7 @@ Write on the left, see the formatted result on the right. Format with the button
 - Checklists, plus an Insert menu for pictures, tables, code blocks and separator lines. Pictures next to your document show up in the preview and the PDF.
 - Export to PDF and print: the result looks just like the reading pane.
 - Reopens the document you had open last time, right where you left off (cursor and scroll), and remembers that spot for each recent document.
+- Make the text bigger or smaller in both panes with Ctrl + mouse wheel or Ctrl+Plus / Ctrl+Minus (Ctrl+0 goes back to normal). The size is remembered.
 - Word count and an unsaved-changes warning, including when closing the window.
 - **Check for updates** button: tells you when a new version is out and downloads the right file for your system.
 - Themes: **System** (desktop default), **Minimal** (quiet light look), **Dark** (soft dark look, Ctrl+Shift+4), **Omarchy** (live desktop theme on Omarchy Linux only). Windows and macOS keep **System** by default.
@@ -46,6 +47,7 @@ See [ROADMAP.md](ROADMAP.md) for what is done and what is coming next.
 | Big title / Subtitle | Ctrl+1 / Ctrl+2 |
 | Bullet / Numbered / Checklist / Quote | Ctrl+Shift+8 / Ctrl+Shift+7 / Ctrl+Shift+9 / Ctrl+Shift+. |
 | Insert picture / table / code block / separator line | Ctrl+Shift+P / Ctrl+Shift+T / Ctrl+Shift+C / Ctrl+Shift+L |
+| Bigger / smaller / normal text | Ctrl++ (or Ctrl+=) / Ctrl+- / Ctrl+0, or Ctrl + mouse wheel |
 | Find / Replace | Ctrl+F / Ctrl+H (Esc closes the find bar) |
 | Next / previous match | F3 / Shift+F3 |
 | Theme System / Minimal / Omarchy / Dark | Ctrl+Shift+1 / Ctrl+Shift+2 / Ctrl+Shift+3 / Ctrl+Shift+4 |
