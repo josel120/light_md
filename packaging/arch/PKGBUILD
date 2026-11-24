@@ -1,8 +1,7 @@
 # Maintainer: community contribution for light_md
 #
-# Template for a future Arch package. The v${pkgver} GitHub tag and a real
-# sha256sums entry do not exist yet — keep sha256sums=('SKIP') until a release
-# is tagged, or build from a local source tree instead.
+# Builds the v${pkgver} release from GitHub. For a new release, bump pkgver
+# and update sha256sums (run `updpkgsums` or `makepkg -g`).
 pkgname=light_md
 pkgver=1.2.0
 pkgrel=1
@@ -13,7 +12,7 @@ license=('MIT')
 depends=('qt6-base' 'qt6-wayland')
 makedepends=('cmake' 'ninja' 'qt6-base')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('4da58f71c721458db86e4c0bcba0699747c8bca355e7ffac35d868d8f473634c')
 
 build() {
   cmake -S "$srcdir/$pkgname-$pkgver" -B build -G Ninja \

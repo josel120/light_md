@@ -64,7 +64,7 @@ Install for your user (binary, `.desktop` entry, and icon):
 cmake --install build --prefix ~/.local
 ```
 
-Or use `packaging/arch/PKGBUILD` as a release template (the `v1.1.0` tag and real `sha256sums` are still pending).
+Or build an Arch package of the latest release with `packaging/arch/PKGBUILD` (`makepkg -si` in that folder).
 
 On first launch under Omarchy, the theme defaults to **Omarchy** and updates when you run `omarchy theme set`. Elsewhere it defaults to **System**. Your choice is remembered.
 
