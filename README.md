@@ -27,7 +27,7 @@ Write on the left, see the formatted result on the right. Format with the button
 - Export to PDF and print: the result looks just like the reading pane.
 - Word count and an unsaved-changes warning, including when closing the window.
 - **Check for updates** button: tells you when a new version is out and downloads the right file for your system.
-- Themes: **System** (desktop default), **Minimal** (quiet light look), **Omarchy** (live desktop theme on Omarchy Linux only). Windows and macOS keep **System** by default.
+- Themes: **System** (desktop default), **Minimal** (quiet light look), **Dark** (soft dark look, Ctrl+Shift+4), **Omarchy** (live desktop theme on Omarchy Linux only). Windows and macOS keep **System** by default.
 
 See [ROADMAP.md](ROADMAP.md) for what is done and what is coming next.
 
@@ -47,7 +47,7 @@ See [ROADMAP.md](ROADMAP.md) for what is done and what is coming next.
 | Insert picture / table / code block / separator line | Ctrl+Shift+P / Ctrl+Shift+T / Ctrl+Shift+C / Ctrl+Shift+L |
 | Find / Replace | Ctrl+F / Ctrl+H (Esc closes the find bar) |
 | Next / previous match | F3 / Shift+F3 |
-| Theme System / Minimal / Omarchy | Ctrl+Shift+1 / Ctrl+Shift+2 / Ctrl+Shift+3 |
+| Theme System / Minimal / Omarchy / Dark | Ctrl+Shift+1 / Ctrl+Shift+2 / Ctrl+Shift+3 / Ctrl+Shift+4 |
 | Help | F1 |
 
 On macOS, use **Cmd** instead of Ctrl where the platform expects it (standard Qt shortcuts).

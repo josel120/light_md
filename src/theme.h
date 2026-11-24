@@ -6,8 +6,8 @@
 #include <QString>
 #include <QTimer>
 
-// Applies one of three looks: the desktop/Qt default, a quiet built-in
-// Minimal palette, or the live Omarchy theme (colors.toml). Theme watching
+// Applies one of four looks: the desktop/Qt default, a quiet built-in
+// Minimal (light) or Dark palette, or the live Omarchy theme (colors.toml). Theme watching
 // follows Omacut (MIT, David Heinemeier Hansson).
 //
 // Designed to stay cheap: System does almost nothing, Omarchy watching is
@@ -22,6 +22,7 @@ public:
         System,
         Omarchy,
         Minimal,
+        Dark,
     };
     Q_ENUM(Kind)
 
@@ -44,6 +45,7 @@ private:
     void apply();
     void applySystem();
     void applyPalette(const QPalette &palette, const QString &styleSheet, const QString &fingerprint);
+    static void setWindowFrameScheme(const QString &mode);
     void clearOmarchyWatcher();
     void armOmarchyWatcher();
     void reloadOmarchy();
@@ -51,6 +53,7 @@ private:
     QString styleSheetFromColors(const QHash<QString, QString> &colors) const;
     static QHash<QString, QString> readColorsToml(const QString &path);
     static QHash<QString, QString> minimalColors();
+    static QHash<QString, QString> darkColors();
     static QHash<QString, QString> omarchyFallbackColors();
     static QString omarchyCurrentDir();
     static QString contrastForeground(const QColor &background);

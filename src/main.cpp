@@ -406,6 +406,7 @@ private:
             {ThemeManager::Kind::System, "Ctrl+Shift+1"},
             {ThemeManager::Kind::Minimal, "Ctrl+Shift+2"},
             {ThemeManager::Kind::Omarchy, "Ctrl+Shift+3"},
+            {ThemeManager::Kind::Dark, "Ctrl+Shift+4"},
         };
         for (const ThemeShortcut &entry : themeShortcuts) {
             auto *action = addOption(themeMenu, ThemeManager::kindLabel(entry.kind),
@@ -1283,7 +1284,7 @@ private:
                 "Ctrl+F Find · Ctrl+H Replace · F3 / Shift+F3 Next / previous match · Esc closes the find bar</p>"
                 "<p><b>Theme</b><br>"
                 "Ctrl+Shift+1 System · Ctrl+Shift+2 Minimal · Ctrl+Shift+3 Omarchy "
-                "(Omarchy only where available)</p>"
+                "(Omarchy only where available) · Ctrl+Shift+4 Dark</p>"
                 "<p><b>Updates</b><br>"
                 "<i>Check for updates</i> tells you when a new version is ready and downloads it.</p>"
                 "<p>F1 — Help. You can also drag a document onto the window to open it, "
