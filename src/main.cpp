@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QCheckBox>
 #include <QCloseEvent>
 #include <QDir>
 #include <QDragEnterEvent>
@@ -7,10 +8,13 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QInputDialog>
 #include <QKeySequence>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMainWindow>
+#include <QMenu>
 #include <QMessageBox>
 #include <QMimeData>
 #include <QPlainTextEdit>
@@ -20,12 +24,14 @@
 #include <QRegularExpression>
 #include <QScrollBar>
 #include <QSettings>
+#include <QShortcut>
 #include <QSplitter>
 #include <QTextBlock>
 #include <QTextBrowser>
 #include <QTextCursor>
 #include <QTextDocument>
 #include <QTimer>
+#include <QUrl>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -45,6 +51,11 @@ public:
                                   QKeySequence::New, central);
         auto *btnOpen = makeButton(QStringLiteral("Open..."), QStringLiteral("Open a saved document"),
                                    QKeySequence::Open, central);
+        auto *btnRecent = makeButton(QStringLiteral("Recent"), QStringLiteral("Open a document you used recently"),
+                                     QKeySequence(), central);
+        m_recentMenu = new QMenu(btnRecent);
+        m_recentMenu->setToolTipsVisible(true);
+        btnRecent->setMenu(m_recentMenu);
         auto *btnSave = makeButton(QStringLiteral("Save"), QStringLiteral("Save your changes"),
                                    QKeySequence::Save, central);
         auto *btnSaveAs = makeButton(QStringLiteral("Save as..."),
@@ -55,16 +66,20 @@ public:
                                   QKeySequence(), central);
         auto *btnPrint = makeButton(QStringLiteral("Print..."), QStringLiteral("Print the document"),
                                     QKeySequence::Print, central);
+        auto *btnFind = makeButton(QStringLiteral("Find..."), QStringLiteral("Find and replace words in the text"),
+                                   QKeySequence::Find, central);
         auto *btnHelp = makeButton(QStringLiteral("Help"), QStringLiteral("How to use light_md"),
                                    QKeySequence::HelpContents, central);
         fileBar->addWidget(btnNew);
         fileBar->addWidget(btnOpen);
+        fileBar->addWidget(btnRecent);
         fileBar->addWidget(btnSave);
         fileBar->addWidget(btnSaveAs);
         fileBar->addSpacing(12);
         fileBar->addWidget(btnPdf);
         fileBar->addWidget(btnPrint);
         fileBar->addStretch();
+        fileBar->addWidget(btnFind);
         fileBar->addWidget(btnHelp);
         root->addLayout(fileBar);
 
@@ -90,10 +105,31 @@ public:
         auto *btnNumbered = makeButton(QStringLiteral("Numbered list"),
                                        QStringLiteral("Number the selected lines: 1, 2, 3..."),
                                        QKeySequence(), central);
+        auto *btnChecklist = makeButton(QStringLiteral("Checklist"),
+                                        QStringLiteral("Put a box to tick in front of each selected line"),
+                                        QKeySequence(), central);
         auto *btnQuote = makeButton(QStringLiteral("Quote"), QStringLiteral("Mark the lines as a quote"),
                                     QKeySequence(), central);
         auto *btnLink = makeButton(QStringLiteral("Link"), QStringLiteral("Add a link to a web page"),
                                    QKeySequence(QStringLiteral("Ctrl+K")), central);
+        auto *btnInsert = makeButton(QStringLiteral("Insert"),
+                                     QStringLiteral("Add a picture, a table, a code block or a separator line"),
+                                     QKeySequence(), central);
+        auto *insertMenu = new QMenu(btnInsert);
+        insertMenu->addAction(QStringLiteral("Picture..."), QKeySequence(QStringLiteral("Ctrl+Shift+P")), this,
+                              [this] { insertImage(); });
+        insertMenu->addAction(QStringLiteral("Table"), QKeySequence(QStringLiteral("Ctrl+Shift+T")), this,
+                              [this] { insertBlock(QStringLiteral("| Column 1 | Column 2 |\n"
+                                                                  "| --- | --- |\n"
+                                                                  "| Text | Text |"),
+                                                   QStringLiteral("Column 1")); });
+        insertMenu->addAction(QStringLiteral("Code block"), QKeySequence(QStringLiteral("Ctrl+Shift+C")), this,
+                              [this] { insertCodeBlock(); });
+        insertMenu->addAction(QStringLiteral("Separator line"), QKeySequence(QStringLiteral("Ctrl+Shift+L")), this,
+                              [this] { insertBlock(QStringLiteral("---")); });
+        // Menu shortcuts only work while the menu is open unless the window knows about them too.
+        addActions(insertMenu->actions());
+        btnInsert->setMenu(insertMenu);
         formatBar->addWidget(btnUndo);
         formatBar->addWidget(btnRedo);
         formatBar->addSpacing(12);
@@ -103,8 +139,10 @@ public:
         formatBar->addWidget(btnItalic);
         formatBar->addWidget(btnBullets);
         formatBar->addWidget(btnNumbered);
+        formatBar->addWidget(btnChecklist);
         formatBar->addWidget(btnQuote);
         formatBar->addWidget(btnLink);
+        formatBar->addWidget(btnInsert);
         formatBar->addStretch();
         root->addLayout(formatBar);
 
@@ -126,6 +164,41 @@ public:
         splitter->setSizes({550, 550});
         root->addWidget(splitter, 1);
 
+        // Find bar: hidden until the user asks for it.
+        m_findBar = new QWidget(central);
+        auto *findLayout = new QHBoxLayout(m_findBar);
+        findLayout->setContentsMargins(0, 0, 0, 0);
+        m_findEdit = new QLineEdit(m_findBar);
+        m_findEdit->setPlaceholderText(QStringLiteral("Word to find"));
+        m_findEdit->setClearButtonEnabled(true);
+        auto *btnPrevious = new QPushButton(QStringLiteral("Previous"), m_findBar);
+        auto *btnNext = new QPushButton(QStringLiteral("Next"), m_findBar);
+        m_replaceEdit = new QLineEdit(m_findBar);
+        m_replaceEdit->setPlaceholderText(QStringLiteral("Replace with"));
+        m_replaceEdit->setClearButtonEnabled(true);
+        auto *btnReplace = new QPushButton(QStringLiteral("Replace"), m_findBar);
+        auto *btnReplaceAll = new QPushButton(QStringLiteral("Replace all"), m_findBar);
+        m_matchCase = new QCheckBox(QStringLiteral("Match case"), m_findBar);
+        m_findInfo = new QLabel(m_findBar);
+        auto *btnCloseFind = new QPushButton(QStringLiteral("Close"), m_findBar);
+        btnPrevious->setToolTip(QStringLiteral("Find the previous match (Shift+F3)"));
+        btnNext->setToolTip(QStringLiteral("Find the next match (Enter or F3)"));
+        btnCloseFind->setToolTip(QStringLiteral("Hide the find bar (Esc)"));
+        findLayout->addWidget(new QLabel(QStringLiteral("Find:"), m_findBar));
+        findLayout->addWidget(m_findEdit, 1);
+        findLayout->addWidget(btnPrevious);
+        findLayout->addWidget(btnNext);
+        findLayout->addSpacing(12);
+        findLayout->addWidget(m_replaceEdit, 1);
+        findLayout->addWidget(btnReplace);
+        findLayout->addWidget(btnReplaceAll);
+        findLayout->addSpacing(12);
+        findLayout->addWidget(m_matchCase);
+        findLayout->addWidget(m_findInfo);
+        findLayout->addWidget(btnCloseFind);
+        m_findBar->hide();
+        root->addWidget(m_findBar);
+
         m_status = new QLabel(central);
         root->addWidget(m_status);
 
@@ -144,6 +217,26 @@ public:
         connect(btnPdf, &QPushButton::clicked, this, [this] { exportPdf(); });
         connect(btnPrint, &QPushButton::clicked, this, [this] { printDocument(); });
         connect(btnHelp, &QPushButton::clicked, this, [this] { showHelp(); });
+        connect(m_recentMenu, &QMenu::aboutToShow, this, [this] { rebuildRecentMenu(); });
+
+        connect(btnFind, &QPushButton::clicked, this, [this] { showFindBar(m_findEdit); });
+        auto *replaceShortcut = new QShortcut(QKeySequence::Replace, this);
+        connect(replaceShortcut, &QShortcut::activated, this, [this] { showFindBar(m_replaceEdit); });
+        auto *nextShortcut = new QShortcut(QKeySequence::FindNext, this);
+        connect(nextShortcut, &QShortcut::activated, this, [this] { findText(false); });
+        auto *previousShortcut = new QShortcut(QKeySequence::FindPrevious, this);
+        connect(previousShortcut, &QShortcut::activated, this, [this] { findText(true); });
+        auto *closeFindShortcut = new QShortcut(QKeySequence(Qt::Key_Escape), m_findBar);
+        closeFindShortcut->setContext(Qt::WidgetWithChildrenShortcut);
+        connect(closeFindShortcut, &QShortcut::activated, this, [this] { hideFindBar(); });
+        connect(btnCloseFind, &QPushButton::clicked, this, [this] { hideFindBar(); });
+        connect(btnNext, &QPushButton::clicked, this, [this] { findText(false); });
+        connect(btnPrevious, &QPushButton::clicked, this, [this] { findText(true); });
+        connect(m_findEdit, &QLineEdit::returnPressed, this, [this] { findText(false); });
+        connect(m_findEdit, &QLineEdit::textEdited, this, [this] { m_findInfo->clear(); });
+        connect(m_replaceEdit, &QLineEdit::returnPressed, this, [this] { replaceOne(); });
+        connect(btnReplace, &QPushButton::clicked, this, [this] { replaceOne(); });
+        connect(btnReplaceAll, &QPushButton::clicked, this, [this] { replaceAll(); });
 
         connect(btnUndo, &QPushButton::clicked, m_editor, &QPlainTextEdit::undo);
         connect(btnRedo, &QPushButton::clicked, m_editor, &QPlainTextEdit::redo);
@@ -158,6 +251,8 @@ public:
         connect(btnBullets, &QPushButton::clicked, this, [this] { prefixLines([](int) { return QStringLiteral("- "); }); });
         connect(btnNumbered, &QPushButton::clicked, this,
                 [this] { prefixLines([](int n) { return QStringLiteral("%1. ").arg(n); }); });
+        connect(btnChecklist, &QPushButton::clicked, this,
+                [this] { prefixLines([](int) { return QStringLiteral("- [ ] "); }); });
         connect(btnBold, &QPushButton::clicked, this, [this] { wrapSelection(QStringLiteral("**")); });
         connect(btnItalic, &QPushButton::clicked, this, [this] { wrapSelection(QStringLiteral("*")); });
         connect(btnLink, &QPushButton::clicked, this, [this] { insertLink(); });
@@ -194,6 +289,7 @@ public:
         m_editor->setPlainText(QString::fromUtf8(file.readAll()));
         m_editor->document()->setModified(false);
         setFilePath(path);
+        addRecentFile(path);
         m_preview->verticalScrollBar()->setValue(0);
         updatePreview();
         return true;
@@ -305,6 +401,8 @@ private:
     void setFilePath(const QString &path)
     {
         m_filePath = path;
+        // Pictures written as "photo.png" are looked up next to the document.
+        m_preview->setSearchPaths(path.isEmpty() ? QStringList() : QStringList{QFileInfo(path).absolutePath()});
         if (!path.isEmpty())
             QSettings().setValue(QStringLiteral("lastFolder"), QFileInfo(path).absolutePath());
         updateTitle();
@@ -409,6 +507,226 @@ private:
         m_editor->setFocus();
     }
 
+    // Inserts a multi-line element on its own lines, separated from the text around it by blank
+    // lines (otherwise "---" under a line of text would turn that line into a title).
+    void insertBlock(const QString &text, const QString &selectWord = QString())
+    {
+        QTextCursor cursor = m_editor->textCursor();
+        cursor.clearSelection();
+        // Go below the whole paragraph, so a table or list the cursor is in is not split.
+        QTextBlock block = cursor.block();
+        while (!block.text().trimmed().isEmpty() && block.next().isValid()
+               && !block.next().text().trimmed().isEmpty())
+            block = block.next();
+        cursor.setPosition(block.position() + block.length() - 1);
+        QString before;
+        if (!block.text().trimmed().isEmpty())
+            before = QStringLiteral("\n\n");
+        else if (block.previous().isValid() && !block.previous().text().trimmed().isEmpty())
+            before = QStringLiteral("\n");
+        // End on a fresh line, with a blank line before any text that follows.
+        const QTextBlock next = block.next();
+        const QString after = !next.isValid() || !next.text().trimmed().isEmpty() ? QStringLiteral("\n") : QString();
+
+        const int start = cursor.position() + before.size();
+        cursor.beginEditBlock();
+        cursor.insertText(before + text + after);
+        cursor.endEditBlock();
+        if (!selectWord.isEmpty()) {
+            // Leave the sample word selected so the user can type over it.
+            cursor.setPosition(start + text.indexOf(selectWord));
+            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, selectWord.size());
+        }
+        m_editor->setTextCursor(cursor);
+        m_editor->setFocus();
+    }
+
+    void insertCodeBlock()
+    {
+        QTextCursor cursor = m_editor->textCursor();
+        if (!cursor.hasSelection()) {
+            insertBlock(QStringLiteral("```\ncode\n```"), QStringLiteral("code"));
+            return;
+        }
+        // Fence the selected lines without changing them.
+        QTextDocument *doc = m_editor->document();
+        const QTextBlock first = doc->findBlock(cursor.selectionStart());
+        QTextBlock last = doc->findBlock(cursor.selectionEnd());
+        if (last != first && cursor.selectionEnd() == last.position())
+            last = last.previous();
+        cursor.beginEditBlock();
+        QTextCursor end(last);
+        end.movePosition(QTextCursor::EndOfBlock);
+        end.insertText(QStringLiteral("\n```"));
+        QTextCursor begin(first);
+        begin.insertText(QStringLiteral("```\n"));
+        cursor.endEditBlock();
+        m_editor->setFocus();
+    }
+
+    void insertImage()
+    {
+        const QString folder = m_filePath.isEmpty() ? lastFolder() : QFileInfo(m_filePath).absolutePath();
+        const QString image = QFileDialog::getOpenFileName(
+            this, QStringLiteral("Choose a picture"), folder,
+            QStringLiteral("Pictures (*.png *.jpg *.jpeg *.gif *.bmp *.svg *.webp);;All files (*)"));
+        if (image.isEmpty()) {
+            m_editor->setFocus();
+            return;
+        }
+        // Next to a saved document the path is relative, so the folder can be moved or shared as a whole.
+        QString target;
+        if (!m_filePath.isEmpty()) {
+            const QString relative = QFileInfo(m_filePath).absoluteDir().relativeFilePath(image);
+            if (!relative.startsWith(QStringLiteral("../")) && !QDir::isAbsolutePath(relative))
+                target = relative;
+        }
+        if (target.isEmpty())
+            target = QUrl::fromLocalFile(image).toString();
+        if (target.contains(QLatin1Char(' ')))
+            target = QStringLiteral("<%1>").arg(target);
+        const QString description = QFileInfo(image).completeBaseName();
+        insertBlock(QStringLiteral("![%1](%2)").arg(description, target), description);
+    }
+
+    void showFindBar(QLineEdit *focusField)
+    {
+        const QTextCursor cursor = m_editor->textCursor();
+        // Start from the selected word, unless it spans lines.
+        if (cursor.hasSelection() && !cursor.selectedText().contains(QChar::ParagraphSeparator))
+            m_findEdit->setText(cursor.selectedText());
+        m_findInfo->clear();
+        m_findBar->show();
+        focusField->setFocus();
+        focusField->selectAll();
+    }
+
+    void hideFindBar()
+    {
+        m_findBar->hide();
+        m_editor->setFocus();
+    }
+
+    QTextDocument::FindFlags findFlags(bool backward) const
+    {
+        QTextDocument::FindFlags flags;
+        if (backward)
+            flags |= QTextDocument::FindBackward;
+        if (m_matchCase->isChecked())
+            flags |= QTextDocument::FindCaseSensitively;
+        return flags;
+    }
+
+    bool findText(bool backward)
+    {
+        const QString text = m_findEdit->text();
+        if (text.isEmpty()) {
+            showFindBar(m_findEdit);
+            return false;
+        }
+        m_findInfo->clear();
+        const QTextDocument::FindFlags flags = findFlags(backward);
+        if (m_editor->find(text, flags))
+            return true;
+        // Nothing more in this direction: continue from the other end of the document.
+        const QTextCursor saved = m_editor->textCursor();
+        QTextCursor cursor = saved;
+        cursor.movePosition(backward ? QTextCursor::End : QTextCursor::Start);
+        m_editor->setTextCursor(cursor);
+        if (m_editor->find(text, flags)) {
+            m_findInfo->setText(backward ? QStringLiteral("Continued from the end")
+                                         : QStringLiteral("Continued from the top"));
+            return true;
+        }
+        m_editor->setTextCursor(saved);
+        m_findInfo->setText(QStringLiteral("Not found"));
+        return false;
+    }
+
+    void replaceOne()
+    {
+        const QString text = m_findEdit->text();
+        if (text.isEmpty())
+            return;
+        QTextCursor cursor = m_editor->textCursor();
+        const Qt::CaseSensitivity cs = m_matchCase->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
+        // The first click finds the word; the next one replaces it and moves on.
+        if (cursor.hasSelection() && cursor.selectedText().compare(text, cs) == 0) {
+            cursor.insertText(m_replaceEdit->text());
+            m_editor->setTextCursor(cursor);
+        }
+        findText(false);
+    }
+
+    void replaceAll()
+    {
+        const QString text = m_findEdit->text();
+        if (text.isEmpty())
+            return;
+        QTextDocument *doc = m_editor->document();
+        const QTextDocument::FindFlags flags = findFlags(false);
+        int count = 0;
+        QTextCursor edit(doc);
+        edit.beginEditBlock();
+        // Searching from after each replacement avoids looping when the new text contains the old one.
+        for (QTextCursor found = doc->find(text, 0, flags); !found.isNull(); found = doc->find(text, found, flags)) {
+            found.insertText(m_replaceEdit->text());
+            ++count;
+        }
+        edit.endEditBlock();
+        m_findInfo->setText(count == 0 ? QStringLiteral("Not found")
+                            : count == 1 ? QStringLiteral("1 replacement")
+                                         : QStringLiteral("%1 replacements").arg(count));
+    }
+
+    static QStringList recentFiles() { return QSettings().value(QStringLiteral("recentFiles")).toStringList(); }
+
+    static void setRecentFiles(const QStringList &files) { QSettings().setValue(QStringLiteral("recentFiles"), files); }
+
+    static void addRecentFile(const QString &path)
+    {
+        const QString clean = QDir::cleanPath(QFileInfo(path).absoluteFilePath());
+        QStringList files = recentFiles();
+        files.removeIf([&](const QString &f) { return f.compare(clean, Qt::CaseInsensitive) == 0; });
+        files.prepend(clean);
+        while (files.size() > 10)
+            files.removeLast();
+        setRecentFiles(files);
+    }
+
+    void rebuildRecentMenu()
+    {
+        m_recentMenu->clear();
+        const QStringList files = recentFiles();
+        if (files.isEmpty()) {
+            m_recentMenu->addAction(QStringLiteral("No recent documents yet"))->setEnabled(false);
+            return;
+        }
+        for (const QString &file : files) {
+            QAction *action = m_recentMenu->addAction(QFileInfo(file).fileName());
+            action->setToolTip(QDir::toNativeSeparators(file));
+            connect(action, &QAction::triggered, this, [this, file] { openRecent(file); });
+        }
+        m_recentMenu->addSeparator();
+        m_recentMenu->addAction(QStringLiteral("Clear this list"), this, [] { setRecentFiles(QStringList()); });
+    }
+
+    void openRecent(const QString &file)
+    {
+        if (!QFileInfo::exists(file)) {
+            QMessageBox::information(this, QStringLiteral("Document not found"),
+                                     QStringLiteral("This document was moved or deleted:\n%1\n\n"
+                                                    "It has been removed from the list.")
+                                         .arg(QDir::toNativeSeparators(file)));
+            QStringList files = recentFiles();
+            files.removeAll(file);
+            setRecentFiles(files);
+            return;
+        }
+        if (askSaveIfModified())
+            loadFile(file);
+    }
+
     bool askSaveIfModified()
     {
         if (!m_editor->document()->isModified())
@@ -461,6 +779,7 @@ private:
         file.write(m_editor->toPlainText().toUtf8());
         m_editor->document()->setModified(false);
         setFilePath(path);
+        addRecentFile(path);
         return true;
     }
 
@@ -534,16 +853,27 @@ private:
                 "for example <i>Bold</i>. If nothing is selected, a sample word is inserted "
                 "that you can replace by typing over it.</p>"
                 "<p><b>Lists and titles:</b> select one or more lines and click <i>Bullet list</i>, "
-                "<i>Numbered list</i>, <i>Big title</i> or <i>Subtitle</i>.</p>"
+                "<i>Numbered list</i>, <i>Checklist</i>, <i>Big title</i> or <i>Subtitle</i>.</p>"
+                "<p><b>Pictures, tables and more:</b> click <i>Insert</i> and choose what to add.</p>"
+                "<p><b>To find a word:</b> click <i>Find</i>. You can also replace it with another one.</p>"
                 "<p><b>To share:</b> use <i>Export to PDF</i>; the PDF looks just like the right pane.</p>"
                 "<p><b>Shortcuts:</b> Ctrl+S save, Ctrl+Z undo, Ctrl+B bold, Ctrl+I italic, "
-                "Ctrl+K link, Ctrl+1 big title, Ctrl+2 subtitle.</p>"
-                "<p>You can also drag a document onto the window to open it.</p>"));
+                "Ctrl+K link, Ctrl+1 big title, Ctrl+2 subtitle, Ctrl+F find, Ctrl+H replace, "
+                "F3 find next, Ctrl+Shift+P picture, Ctrl+Shift+T table, Ctrl+Shift+C code block, "
+                "Ctrl+Shift+L separator line.</p>"
+                "<p>You can also drag a document onto the window to open it, "
+                "or reopen one from <i>Recent</i>.</p>"));
     }
 
     QPlainTextEdit *m_editor = nullptr;
     QTextBrowser *m_preview = nullptr;
     QLabel *m_status = nullptr;
+    QMenu *m_recentMenu = nullptr;
+    QWidget *m_findBar = nullptr;
+    QLineEdit *m_findEdit = nullptr;
+    QLineEdit *m_replaceEdit = nullptr;
+    QCheckBox *m_matchCase = nullptr;
+    QLabel *m_findInfo = nullptr;
     QTimer m_previewTimer;
     QString m_filePath;
 };
@@ -553,6 +883,7 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("light_md"));
     QApplication::setOrganizationName(QStringLiteral("light_md"));
+    QApplication::setWindowIcon(QIcon(QStringLiteral(":/icons/light_md.png")));
     MainWindow window;
     // Lets a document be opened by double-click or "Open with" from File Explorer.
     const QStringList args = QApplication::arguments();

@@ -17,10 +17,14 @@ Escreva à esquerda e veja o resultado formatado à direita, na hora. Nunca usou
 - Dois painéis: escrita à esquerda e leitura à direita, com pré-visualização instantânea.
 - Botões com palavras simples: New (novo), Open (abrir), Save (salvar), Big title (título grande), Bold (negrito), Bullet list (lista com marcadores), Quote (citação), Link etc.
 - Abre e salva documentos `.md`, inclusive arrastando-os para a janela ou usando "Abrir com" no Explorador de Arquivos.
+- Localizar e substituir palavras (Ctrl+F, Ctrl+H) e reabrir seus últimos documentos pelo menu Recent (recentes).
+- Listas de tarefas (Checklist) e um menu Insert (inserir) para imagens, tabelas, blocos de código e linhas separadoras. As imagens ao lado do documento aparecem na pré-visualização e no PDF.
 - Exporta para PDF e imprime: o resultado fica igual ao painel da direita.
 - Desfazer e refazer, além de atalhos de teclado (Ctrl+S, Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+1, Ctrl+2).
 - Contador de palavras e aviso de alterações não salvas, inclusive ao fechar a janela.
 - Botão Help (ajuda) com um guia curto.
+
+Veja [ROADMAP.md](ROADMAP.md) (em inglês) para saber o que já está pronto e o que vem a seguir.
 
 ## Compilar (Windows, com Qt 6 e MinGW)
 

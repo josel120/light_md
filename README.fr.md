@@ -17,10 +17,14 @@ Un éditeur Markdown léger en C++ et Qt 6, ouvert à tous les utilisateurs.
 - Deux volets : écriture à gauche, lecture à droite, avec un aperçu instantané.
 - Des boutons aux mots simples : New (nouveau), Open (ouvrir), Save (enregistrer), Big title (grand titre), Bold (gras), Bullet list (liste à puces), Quote (citation), Link (lien), etc.
 - Ouvre et enregistre des documents `.md`, y compris par glisser-déposer sur la fenêtre ou via « Ouvrir avec » dans l'Explorateur de fichiers.
+- Rechercher et remplacer des mots (Ctrl+F, Ctrl+H), et rouvrir vos derniers documents depuis le menu Recent (récents).
+- Listes de tâches (Checklist) et un menu Insert (insérer) pour les images, tableaux, blocs de code et lignes de séparation. Les images placées à côté du document s'affichent dans l'aperçu et dans le PDF.
 - Export en PDF et impression : le résultat est identique au volet de droite.
 - Annuler et rétablir, plus des raccourcis clavier (Ctrl+S, Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+1, Ctrl+2).
 - Compteur de mots et avertissement en cas de modifications non enregistrées, y compris à la fermeture de la fenêtre.
 - Un bouton Help (aide) avec un guide court.
+
+Voir [ROADMAP.md](ROADMAP.md) (en anglais) pour ce qui est fait et ce qui arrive ensuite.
 
 ## Compiler (Windows, avec Qt 6 et MinGW)
 

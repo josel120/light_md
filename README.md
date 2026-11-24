@@ -15,10 +15,14 @@ Write on the left and see the formatted result on the right, instantly. New to M
 - Two panes: writing on the left, reading on the right, with an instant preview.
 - Buttons in everyday words: New, Open, Save, Big title, Bold, Bullet list, Quote, Link, etc.
 - Open and save `.md` documents, also by dragging them onto the window or using "Open with" from File Explorer.
+- Find and replace words (Ctrl+F, Ctrl+H), and reopen your latest documents from the Recent menu.
+- Checklists, plus an Insert menu for pictures, tables, code blocks and separator lines. Pictures next to your document show up in the preview and the PDF.
 - Export to PDF and print: the result looks just like the right pane.
 - Undo and redo, plus keyboard shortcuts (Ctrl+S, Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+1, Ctrl+2).
 - Word count and an unsaved-changes warning, including when closing the window.
 - A Help button with a short guide.
+
+See [ROADMAP.md](ROADMAP.md) for what is done and what is coming next.
 
 ## Build (Windows, with Qt 6 and MinGW)
 
