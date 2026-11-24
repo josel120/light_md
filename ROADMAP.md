@@ -2,6 +2,16 @@
 
 What light_md already does, what is coming next, and ideas for later.
 Tick a box (`[x]`) and move the line to **Done** when a feature is finished.
+While working on something, move it to **In progress** so we always know where we left off.
+
+## In progress
+
+Order agreed on 2026-11-24, one at a time:
+
+1. [x] Synchronized scrolling between the editor and the preview → moved to Done (1.4)
+2. [ ] Dark theme on Windows and macOS (Omarchy already brings one on Linux)
+3. [ ] Reopen the last document on start and remember the cursor position
+4. [ ] Adjustable font size (Ctrl + mouse wheel, Ctrl+Plus / Ctrl+Minus)
 
 ## Done
 
@@ -34,14 +44,13 @@ Tick a box (`[x]`) and move the line to **Done** when a feature is finished.
 - [x] GitHub Actions: builds Windows, macOS and Linux on every push and attaches the Windows and macOS packages to each release
 - [x] Check for updates button (downloads the right file for your system)
 
+### Version 1.4 (in progress)
+- [x] Synchronized scrolling between the editor and the preview (Options → Sync scrolling turns it off)
+
 ## Next
 
-- [ ] Synchronized scrolling between the editor and the preview
-- [ ] Dark theme on Windows and macOS (Omarchy already brings one on Linux)
-- [ ] Reopen the last document on start and remember the cursor position
 - [ ] Autosave and recovery after a crash
 - [ ] Syntax highlighting in the editor (titles bigger, bold in bold, links in color)
-- [ ] Adjustable font size (Ctrl + mouse wheel, Ctrl+Plus / Ctrl+Minus)
 - [ ] Paste pictures from the clipboard (saved next to the document)
 
 ## Later

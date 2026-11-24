@@ -119,6 +119,20 @@ public:
             updateStatus();
         });
 
+        // Scrolling either pane moves the other to the same place, proportionally.
+        QScrollBar *editorBar = m_editor->verticalScrollBar();
+        QScrollBar *previewBar = m_preview->verticalScrollBar();
+        connect(editorBar, &QScrollBar::valueChanged, this, [this, editorBar, previewBar] {
+            syncScroll(editorBar, previewBar);
+        });
+        connect(previewBar, &QScrollBar::valueChanged, this, [this, editorBar, previewBar] {
+            syncScroll(previewBar, editorBar);
+        });
+        // The preview's height changes after it re-renders or resizes; follow the editor again.
+        connect(previewBar, &QScrollBar::rangeChanged, this, [this, editorBar, previewBar] {
+            syncScroll(editorBar, previewBar);
+        });
+
         QSettings settings;
         const QByteArray geometry = settings.value(QStringLiteral("geometry")).toByteArray();
         if (!geometry.isEmpty())
@@ -127,6 +141,8 @@ public:
         // Classic defaults on first run: buttons visible, two panes (edit mode).
         const bool showButtons = settings.value(QStringLiteral("ui/showButtons"), true).toBool();
         const bool editMode = settings.value(QStringLiteral("ui/editMode"), true).toBool();
+        m_syncScroll = settings.value(QStringLiteral("ui/syncScroll"), true).toBool();
+        m_syncScrollAction->setChecked(m_syncScroll);
 
         if (!initialFile.isEmpty()) {
             loadFile(initialFile);
@@ -326,6 +342,12 @@ private:
         m_showButtonsAction->setCheckable(true);
         m_showButtonsAction->setChecked(true);
 
+        m_syncScrollAction = addOption(options, QStringLiteral("S&ync scrolling"),
+                                       QStringLiteral("Scroll the writing pane and the preview together"),
+                                       QKeySequence());
+        m_syncScrollAction->setCheckable(true);
+        m_syncScrollAction->setChecked(true);
+
         options->addSeparator();
         m_formatMenu = options->addMenu(QStringLiteral("&Format"));
         auto *actUndo = addOption(m_formatMenu, QStringLiteral("&Undo"),
@@ -455,6 +477,11 @@ private:
         connect(m_editAction, &QAction::toggled, this, [this](bool on) { setEditMode(on); });
         connect(actRead, &QAction::triggered, this, [this] { setEditMode(false); });
         connect(m_showButtonsAction, &QAction::toggled, this, [this](bool on) { setShowButtons(on); });
+        connect(m_syncScrollAction, &QAction::toggled, this, [this](bool on) {
+            m_syncScroll = on;
+            QSettings().setValue(QStringLiteral("ui/syncScroll"), on);
+            syncScroll(m_editor->verticalScrollBar(), m_preview->verticalScrollBar());
+        });
 
         connect(actUndo, &QAction::triggered, m_editor, &QPlainTextEdit::undo);
         connect(actRedo, &QAction::triggered, m_editor, &QPlainTextEdit::redo);
@@ -587,6 +614,7 @@ private:
             if (m_splitter->sizes().value(0, 0) < 80)
                 m_splitter->setSizes({550, 550});
             m_editor->setFocus(Qt::ShortcutFocusReason);
+            syncScroll(m_editor->verticalScrollBar(), m_preview->verticalScrollBar());
         } else {
             m_preview->setFocus(Qt::OtherFocusReason);
         }
@@ -605,6 +633,20 @@ private:
         return QString();
     }
 
+    // Moves `to` to the same relative position as `from`. Only while both panes are showing.
+    void syncScroll(QScrollBar *from, QScrollBar *to)
+    {
+        if (!m_syncScroll || m_syncingScroll || !m_editor->isVisible())
+            return;
+        const double ratio = from->maximum() > from->minimum()
+                                 ? double(from->value() - from->minimum()) / (from->maximum() - from->minimum())
+                                 : 0.0;
+        // The guard stops `to` from scrolling `from` back and making the panes jitter.
+        m_syncingScroll = true;
+        to->setValue(to->minimum() + qRound(ratio * (to->maximum() - to->minimum())));
+        m_syncingScroll = false;
+    }
+
     void updatePreview()
     {
         // Keep the reading position; otherwise the pane jumps to the top on every keystroke.
@@ -612,6 +654,7 @@ private:
         const int scroll = bar->value();
         m_preview->setMarkdown(m_editor->toPlainText());
         bar->setValue(scroll);
+        syncScroll(m_editor->verticalScrollBar(), bar);
     }
 
     void updateStatus()
@@ -1222,7 +1265,8 @@ private:
                 "<p><b>Layout</b><br>"
                 "Ctrl+Shift+B — Show / hide buttons<br>"
                 "Ctrl+E — Edit document (show writing pane)<br>"
-                "Ctrl+R or Esc — Read only</p>"
+                "Ctrl+R or Esc — Read only<br>"
+                "<i>Sync scrolling</i> (Options) — the preview follows the writing pane</p>"
                 "<p><b>File</b><br>"
                 "Ctrl+N New · Ctrl+O Open · Ctrl+S Save · Ctrl+Shift+S Save as<br>"
                 "Ctrl+Shift+E Export PDF · Ctrl+P Print</p>"
@@ -1257,6 +1301,7 @@ private:
     QLabel *m_status = nullptr;
     QAction *m_editAction = nullptr;
     QAction *m_showButtonsAction = nullptr;
+    QAction *m_syncScrollAction = nullptr;
     QMenu *m_formatMenu = nullptr;
     QMenu *m_recentMenu = nullptr;
     QWidget *m_findBar = nullptr;
@@ -1271,6 +1316,8 @@ private:
     QString m_filePath;
     bool m_editMode = true;
     bool m_showButtons = true;
+    bool m_syncScroll = true;
+    bool m_syncingScroll = false;
 };
 
 static ThemeManager::Kind loadInitialTheme()
