@@ -20,7 +20,28 @@ Links schreiben, rechts sofort das formatierte Ergebnis sehen. Neu bei Markdown?
 - Export als PDF und Drucken: Das Ergebnis sieht genauso aus wie der rechte Bereich.
 - Rückgängig und Wiederholen sowie Tastenkürzel (Strg+S, Strg+Z, Strg+B, Strg+I, Strg+K, Strg+1, Strg+2).
 - Wortzähler und Warnung bei ungespeicherten Änderungen, auch beim Schließen des Fensters.
+- Themenwahl: **System** (Desktop), **Minimal** (ruhiges helles Erscheinungsbild), **Omarchy** (folgt dem Omarchy-Thema unter Linux).
+- Tastenkürzel: **Ctrl+E** bearbeiten, **Ctrl+R** / **Esc** nur lesen; alles Weitere unter Options (Tabelle in [README.md](README.md)).
 - Eine Help-Schaltfläche (Hilfe) mit einer kurzen Anleitung.
+
+## Unter Linux kompilieren
+
+Benötigt wird Qt 6 (`Widgets` und `PrintSupport`). Unter Arch / [Omarchy](https://omarchy.org/):
+
+```bash
+sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-wayland
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+./build/light_md
+```
+
+Zur Installation für deinen Benutzer (Binary, `.desktop`-Eintrag und Symbol für den Starter):
+
+```bash
+cmake --install build --prefix ~/.local
+```
+
+Beim ersten Start unter Omarchy ist **Omarchy** voreingestellt und aktualisiert sich beim Themenwechsel. Sonst startet es mit **System**. Die Wahl wird gespeichert.
 
 ## Kompilieren (Windows, mit Qt 6 und MinGW)
 
@@ -48,3 +69,5 @@ Kopiere den kompletten Ordner `dist` und öffne `dist\bin\light_md.exe`.
 ## Lizenz
 
 MIT
+
+Die Omarchy-Themenverfolgung folgt dem Ansatz von Omacut (MIT, David Heinemeier Hansson).

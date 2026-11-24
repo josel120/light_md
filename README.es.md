@@ -20,7 +20,28 @@ Escribe a la izquierda y ve el resultado formateado a la derecha, al instante. �
 - Exporta a PDF e imprime: el resultado se ve igual que el panel derecho.
 - Deshacer y rehacer, y atajos de teclado (Ctrl+S, Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+1, Ctrl+2).
 - Contador de palabras y aviso de cambios sin guardar, también al cerrar la ventana.
+- Selector de tema: **System** (escritorio), **Minimal** (aspecto claro y sobrio), **Omarchy** (sigue el tema Omarchy en Linux).
+- Atajos: **Ctrl+E** editar, **Ctrl+R** / **Esc** solo lectura; el resto está en Options (ver tabla en [README.md](README.md)).
 - Botón Help (ayuda) con una guía corta.
+
+## Compilar en Linux
+
+Hace falta Qt 6 (`Widgets` y `PrintSupport`). En Arch / [Omarchy](https://omarchy.org/):
+
+```bash
+sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-wayland
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+./build/light_md
+```
+
+Para instalarlo en tu usuario (binario, entrada `.desktop` e icono para el lanzador):
+
+```bash
+cmake --install build --prefix ~/.local
+```
+
+En el primer arranque bajo Omarchy, el tema por defecto es **Omarchy** y se actualiza al cambiar de tema. En el resto de sistemas, el valor inicial es **System**. La elección se recuerda.
 
 ## Compilar (Windows, con Qt 6 y MinGW)
 
@@ -35,7 +56,7 @@ C:\Qt\Tools\CMake_64\bin\cmake.exe --build build
 
 Ajusta las rutas si tu versión de Qt o de MinGW es otra.
 
-## Llevarlo a otro equipo
+## Llevarlo a otro equipo (Windows)
 
 Para crear una carpeta que funcione en cualquier PC con Windows sin instalar Qt:
 
@@ -48,3 +69,5 @@ Copia la carpeta `dist` completa y abre `dist\bin\light_md.exe`.
 ## Licencia
 
 MIT
+
+El seguimiento del tema Omarchy sigue el enfoque de Omacut (MIT, David Heinemeier Hansson).

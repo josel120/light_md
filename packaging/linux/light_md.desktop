@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=light_md
+GenericName=Markdown Editor
+Comment=Lightweight Markdown editor with live preview
+Exec=light_md %f
+Icon=light_md
+Terminal=false
+Categories=Office;TextEditor;
+MimeType=text/markdown;text/x-markdown;
+Keywords=markdown;md;editor;preview;
+StartupWMClass=light_md
