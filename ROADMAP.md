@@ -10,7 +10,7 @@ Order agreed on 2026-11-24, one at a time:
 
 1. [x] Synchronized scrolling between the editor and the preview → moved to Done (1.4)
 2. [x] Dark theme on Windows and macOS → moved to Done (1.4)
-3. [ ] Reopen the last document on start and remember the cursor position
+3. [x] Reopen the last document on start and remember the cursor position → moved to Done (1.4)
 4. [ ] Adjustable font size (Ctrl + mouse wheel, Ctrl+Plus / Ctrl+Minus)
 
 ## Done
@@ -47,6 +47,7 @@ Order agreed on 2026-11-24, one at a time:
 ### Version 1.4 (in progress)
 - [x] Synchronized scrolling between the editor and the preview (Options → Sync scrolling turns it off)
 - [x] Dark theme for every system (Options → Theme → Dark, Ctrl+Shift+4); the title bar follows the theme too
+- [x] Reopens the last document on start, at the same cursor and scroll position (also remembered for each recent document)
 
 ## Next
 

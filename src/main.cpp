@@ -144,8 +144,16 @@ public:
         m_syncScroll = settings.value(QStringLiteral("ui/syncScroll"), true).toBool();
         m_syncScrollAction->setChecked(m_syncScroll);
 
-        if (!initialFile.isEmpty()) {
-            loadFile(initialFile);
+        // A file given on the command line wins; otherwise pick up the document open last time.
+        QString startFile = initialFile;
+        if (startFile.isEmpty()) {
+            const QString last = settings.value(QStringLiteral("session/lastFile")).toString();
+            if (!last.isEmpty() && QFileInfo::exists(last))
+                startFile = last;
+        }
+
+        if (!startFile.isEmpty() && loadFile(startFile)) {
+            // Loaded; loadFile already restored where the user left off.
         } else {
             m_editor->setPlainText(QStringLiteral(
                 "# Welcome to light_md\n\n"
@@ -173,12 +181,14 @@ public:
                                  QStringLiteral("Could not read the file:\n%1").arg(path));
             return false;
         }
+        rememberPosition();
         m_editor->setPlainText(QString::fromUtf8(file.readAll()));
         m_editor->document()->setModified(false);
         setFilePath(path);
         addRecentFile(path);
         m_preview->verticalScrollBar()->setValue(0);
         updatePreview();
+        restorePosition(path);
         // Keep the user's current Edit/Reader choice (remembered in QSettings).
         return true;
     }
@@ -190,7 +200,14 @@ protected:
             event->ignore();
             return;
         }
-        QSettings().setValue(QStringLiteral("geometry"), saveGeometry());
+        rememberPosition();
+        QSettings settings;
+        settings.setValue(QStringLiteral("geometry"), saveGeometry());
+        // An unsaved new document has nothing to reopen, so the next start shows the welcome text.
+        if (m_filePath.isEmpty())
+            settings.remove(QStringLiteral("session/lastFile"));
+        else
+            settings.setValue(QStringLiteral("session/lastFile"), cleanPath(m_filePath));
         event->accept();
     }
 
@@ -980,9 +997,55 @@ private:
 
     static void setRecentFiles(const QStringList &files) { QSettings().setValue(QStringLiteral("recentFiles"), files); }
 
+    static QString cleanPath(const QString &path) { return QDir::cleanPath(QFileInfo(path).absoluteFilePath()); }
+
+    // Saves where the current document was left: the cursor and how far the reading pane was scrolled.
+    void rememberPosition()
+    {
+        if (m_filePath.isEmpty())
+            return;
+        QSettings settings;
+        QVariantMap all = settings.value(QStringLiteral("session/positions")).toMap();
+        const QScrollBar *bar = m_preview->verticalScrollBar();
+        const double scroll = bar->maximum() > 0 ? double(bar->value()) / bar->maximum() : 0.0;
+        all.insert(cleanPath(m_filePath), QVariantMap{{QStringLiteral("cursor"), m_editor->textCursor().position()},
+                                                      {QStringLiteral("scroll"), scroll}});
+        // Only documents still in the Recent list are worth remembering; this keeps the list short.
+        const QStringList recent = recentFiles();
+        for (auto it = all.begin(); it != all.end();) {
+            if (recent.contains(it.key(), Qt::CaseInsensitive))
+                ++it;
+            else
+                it = all.erase(it);
+        }
+        settings.setValue(QStringLiteral("session/positions"), all);
+    }
+
+    void restorePosition(const QString &path)
+    {
+        const QVariantMap saved =
+            QSettings().value(QStringLiteral("session/positions")).toMap().value(cleanPath(path)).toMap();
+        if (saved.isEmpty())
+            return;
+        QTextCursor cursor = m_editor->textCursor();
+        const int last = m_editor->document()->characterCount() - 1;
+        cursor.setPosition(qBound(0, saved.value(QStringLiteral("cursor")).toInt(), last));
+        m_editor->setTextCursor(cursor);
+        const double scroll = saved.value(QStringLiteral("scroll")).toDouble();
+        // Wait for the window to be laid out, so both panes know their height before scrolling.
+        QTimer::singleShot(0, this, [this, scroll] {
+            m_editor->centerCursor();
+            // With sync on and both panes showing, the preview already follows the editor.
+            if (!m_syncScroll || !m_editor->isVisible()) {
+                QScrollBar *bar = m_preview->verticalScrollBar();
+                bar->setValue(qRound(scroll * bar->maximum()));
+            }
+        });
+    }
+
     static void addRecentFile(const QString &path)
     {
-        const QString clean = QDir::cleanPath(QFileInfo(path).absoluteFilePath());
+        const QString clean = cleanPath(path);
         QStringList files = recentFiles();
         files.removeIf([&](const QString &f) { return f.compare(clean, Qt::CaseInsensitive) == 0; });
         files.prepend(clean);
@@ -1146,6 +1209,7 @@ private:
     {
         if (!askSaveIfModified())
             return;
+        rememberPosition();
         m_editor->clear();
         m_editor->document()->setModified(false);
         setFilePath(QString());
