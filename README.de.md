@@ -22,6 +22,8 @@ Links schreiben, rechts sofort das formatierte Ergebnis sehen. Neu bei Markdown?
 - Export als PDF und Drucken: Das Ergebnis sieht genauso aus wie der rechte Bereich.
 - Rückgängig und Wiederholen sowie Tastenkürzel (Strg+S, Strg+Z, Strg+B, Strg+I, Strg+K, Strg+1, Strg+2).
 - Wortzähler und Warnung bei ungespeicherten Änderungen, auch beim Schließen des Fensters.
+- Schaltfläche **Check for updates** (nach Updates suchen): meldet neue Versionen und lädt die passende Datei für dein System herunter.
+- **macOS** (13 Ventura oder neuer): Ab Version 1.3 enthält jedes Release eine `macos.zip`. Entpacken und **light_md** in den Ordner Programme ziehen. Da die App noch nicht von Apple signiert ist, blockiert macOS sie beim ersten Start: **Systemeinstellungen → Datenschutz & Sicherheit** öffnen und **Trotzdem öffnen** klicken.
 - Themenwahl: **System** (Desktop), **Minimal** (ruhiges helles Erscheinungsbild), **Omarchy** (folgt dem Omarchy-Thema unter Linux).
 - Tastenkürzel: **Ctrl+Shift+B** Schaltflächen ein- oder ausblenden, **Ctrl+E** bearbeiten, **Ctrl+R** / **Esc** nur lesen; alles Weitere unter Options (Tabelle in [README.md](README.md)).
 - Eine Help-Schaltfläche (Hilfe) mit einer kurzen Anleitung.

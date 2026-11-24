@@ -6,15 +6,20 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QCloseEvent>
+#include <QDesktopServices>
 #include <QDir>
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFileOpenEvent>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QInputDialog>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QKeyEvent>
 #include <QKeySequence>
 #include <QLabel>
@@ -24,6 +29,9 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QMimeData>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
 #include <QPlainTextEdit>
 #include <QPrintDialog>
 #include <QPrinter>
@@ -41,6 +49,7 @@
 #include <QTimer>
 #include <QUrl>
 #include <QVBoxLayout>
+#include <QVersionNumber>
 #include <QWidget>
 
 class MainWindow : public QMainWindow
@@ -206,6 +215,13 @@ protected:
 
     bool eventFilter(QObject *watched, QEvent *event) override
     {
+        // On macOS, documents opened from Finder arrive as an event instead of a command-line argument.
+        if (event->type() == QEvent::FileOpen) {
+            const QString path = static_cast<QFileOpenEvent *>(event)->file();
+            if (!path.isEmpty() && askSaveIfModified())
+                loadFile(path);
+            return true;
+        }
         if (watched == m_editor->viewport()) {
             if (event->type() == QEvent::DragEnter || event->type() == QEvent::DragMove) {
                 auto *drag = static_cast<QDragMoveEvent *>(event);
@@ -390,6 +406,9 @@ private:
             });
         }
 
+        auto *actUpdates = addOption(options, QStringLiteral("Check for &updates..."),
+                                     QStringLiteral("See if a newer version of light_md is available"),
+                                     QKeySequence());
         auto *actHelp = addOption(options, QStringLiteral("&Help"), QStringLiteral("How to use light_md"),
                                   QKeySequence::HelpContents);
 
@@ -405,6 +424,7 @@ private:
         addBarButton(m_fileBarLayout, actPrint);
         m_fileBarLayout->addStretch();
         addBarButton(m_fileBarLayout, actFind);
+        addBarButton(m_fileBarLayout, actUpdates);
         addBarButton(m_fileBarLayout, actHelp);
 
         // Classic format bar.
@@ -431,6 +451,7 @@ private:
         connect(actPdf, &QAction::triggered, this, [this] { exportPdf(); });
         connect(actPrint, &QAction::triggered, this, [this] { printDocument(); });
         connect(actHelp, &QAction::triggered, this, [this] { showHelp(); });
+        connect(actUpdates, &QAction::triggered, this, [this] { checkForUpdates(); });
         connect(m_editAction, &QAction::toggled, this, [this](bool on) { setEditMode(on); });
         connect(actRead, &QAction::triggered, this, [this] { setEditMode(false); });
         connect(m_showButtonsAction, &QAction::toggled, this, [this](bool on) { setShowButtons(on); });
@@ -959,6 +980,105 @@ private:
             loadFile(file);
     }
 
+    // The release file for this system, matched by the end of its name; empty when there is none.
+    static QString platformDownloadSuffix()
+    {
+#if defined(Q_OS_WIN)
+        return QStringLiteral("-windows-x64.zip");
+#elif defined(Q_OS_MACOS)
+        return QStringLiteral("-macos.zip");
+#else
+        return QString();
+#endif
+    }
+
+    static QString installSteps()
+    {
+#if defined(Q_OS_WIN)
+        return QStringLiteral("When the download finishes, close light_md, unzip the file and replace the old "
+                              "light_md folder with the new one. Your documents are not affected.");
+#elif defined(Q_OS_MACOS)
+        return QStringLiteral("When the download finishes, close light_md, unzip the file and drag light_md "
+                              "to your Applications folder, replacing the old one.");
+#else
+        return QStringLiteral("Install the new version the same way you installed this one.");
+#endif
+    }
+
+    void checkForUpdates()
+    {
+        if (m_updateReply)
+            return;
+        QNetworkRequest request(QUrl(QStringLiteral("https://api.github.com/repos/josel120/light_md/releases/latest")));
+        // GitHub rejects API requests without a User-Agent.
+        request.setHeader(QNetworkRequest::UserAgentHeader,
+                          QStringLiteral("light_md/%1").arg(QStringLiteral(LIGHT_MD_VERSION)));
+        request.setRawHeader("Accept", "application/vnd.github+json");
+        request.setTransferTimeout(15000);
+        m_status->setText(QStringLiteral("Checking for updates..."));
+        m_updateReply = m_network.get(request);
+        connect(m_updateReply, &QNetworkReply::finished, this, [this] { showUpdateResult(); });
+    }
+
+    void showUpdateResult()
+    {
+        QNetworkReply *reply = m_updateReply;
+        m_updateReply = nullptr;
+        reply->deleteLater();
+        updateStatus();
+        const QString title = QStringLiteral("Check for updates");
+        if (reply->error() != QNetworkReply::NoError) {
+            QMessageBox::warning(this, title,
+                                 QStringLiteral("Could not check for updates. Please check your internet "
+                                                "connection and try again.\n\n(%1)")
+                                     .arg(reply->errorString()));
+            return;
+        }
+        const QJsonObject release = QJsonDocument::fromJson(reply->readAll()).object();
+        QString tag = release.value(QStringLiteral("tag_name")).toString();
+        if (tag.startsWith(QLatin1Char('v')))
+            tag.remove(0, 1);
+        const QVersionNumber latest = QVersionNumber::fromString(tag);
+        const QVersionNumber current = QVersionNumber::fromString(QStringLiteral(LIGHT_MD_VERSION));
+        if (latest.isNull()) {
+            QMessageBox::warning(this, title, QStringLiteral("Could not read the latest version from GitHub."));
+            return;
+        }
+        if (QVersionNumber::compare(latest, current) <= 0) {
+            QMessageBox::information(this, title,
+                                     QStringLiteral("You have the latest version of light_md (%1).")
+                                         .arg(current.toString()));
+            return;
+        }
+
+        const QUrl releasePage(release.value(QStringLiteral("html_url")).toString());
+        QUrl download = releasePage;
+        const QString suffix = platformDownloadSuffix();
+        const QJsonArray assets = release.value(QStringLiteral("assets")).toArray();
+        for (const QJsonValue &asset : assets) {
+            const QJsonObject file = asset.toObject();
+            if (!suffix.isEmpty() && file.value(QStringLiteral("name")).toString().endsWith(suffix)) {
+                download = QUrl(file.value(QStringLiteral("browser_download_url")).toString());
+                break;
+            }
+        }
+
+        QMessageBox box(QMessageBox::Information, QStringLiteral("Update available"),
+                        QStringLiteral("light_md %1 is available. You have version %2.")
+                            .arg(latest.toString(), current.toString()),
+                        QMessageBox::NoButton, this);
+        box.setInformativeText(installSteps());
+        QPushButton *btnDownload = box.addButton(QStringLiteral("Download"), QMessageBox::AcceptRole);
+        QPushButton *btnNews = box.addButton(QStringLiteral("What's new"), QMessageBox::HelpRole);
+        box.addButton(QStringLiteral("Not now"), QMessageBox::RejectRole);
+        box.setDefaultButton(btnDownload);
+        box.exec();
+        if (box.clickedButton() == btnDownload)
+            QDesktopServices::openUrl(download);
+        else if (box.clickedButton() == btnNews)
+            QDesktopServices::openUrl(releasePage);
+    }
+
     bool askSaveIfModified()
     {
         if (!m_editor->document()->isModified())
@@ -1120,6 +1240,8 @@ private:
                 "<p><b>Theme</b><br>"
                 "Ctrl+Shift+1 System · Ctrl+Shift+2 Minimal · Ctrl+Shift+3 Omarchy "
                 "(Omarchy only where available)</p>"
+                "<p><b>Updates</b><br>"
+                "<i>Check for updates</i> tells you when a new version is ready and downloads it.</p>"
                 "<p>F1 — Help. You can also drag a document onto the window to open it, "
                 "or reopen one from <i>Recent</i>.</p>"));
     }
@@ -1142,6 +1264,8 @@ private:
     QLineEdit *m_replaceEdit = nullptr;
     QCheckBox *m_matchCase = nullptr;
     QLabel *m_findInfo = nullptr;
+    QNetworkAccessManager m_network;
+    QNetworkReply *m_updateReply = nullptr;
     QTimer m_previewTimer;
     QTimer m_statusTimer;
     QString m_filePath;
@@ -1182,6 +1306,8 @@ int main(int argc, char *argv[])
     const QStringList args = QApplication::arguments();
     const QString initialFile = args.size() > 1 ? args.at(1) : QString();
     MainWindow window(&themes, initialFile);
+    // Receives QFileOpenEvent, which is sent to the application object (see MainWindow::eventFilter).
+    app.installEventFilter(&window);
     window.show();
     return app.exec();
 }

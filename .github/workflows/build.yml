@@ -1,0 +1,118 @@
+# Builds light_md on Windows, macOS and Linux for every push and pull request.
+# When a version tag (v*) is pushed, the Windows and macOS packages are attached
+# to the GitHub release of that tag (a draft release is created if none exists).
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  QT_VERSION: '6.9.3'
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+          - name: macOS
+            os: macos-latest
+          - name: Linux
+            os: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Package name
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "VERSION=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
+          else
+            echo "VERSION=dev-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install Qt (Windows, MinGW)
+        if: runner.os == 'Windows'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          arch: win64_mingw
+          tools: tools_mingw1310
+          cache: true
+
+      - name: Install Qt (macOS)
+        if: runner.os == 'macOS'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          cache: true
+
+      - name: Install Qt (Linux)
+        if: runner.os == 'Linux'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          cache: true
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel
+          cmake --install build --prefix "$(pwd -W)/dist"
+          cd dist && 7z a "../light_md-${VERSION}-windows-x64.zip" .
+
+      # Universal app (Apple Silicon and Intel). The ad-hoc signature is needed because
+      # macdeployqt changes the binaries; without it Apple Silicon Macs refuse to start the app.
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
+          cmake --build build --parallel
+          cmake --install build --prefix "$PWD/dist"
+          codesign --force --deep --sign - dist/light_md.app
+          codesign --verify --deep --strict dist/light_md.app
+          lipo -info dist/light_md.app/Contents/MacOS/light_md
+          ditto -c -k --keepParent dist/light_md.app "light_md-${VERSION}-macos.zip"
+
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libxkbcommon-dev
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel
+
+      - name: Upload package
+        if: runner.os != 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: light_md-${{ env.VERSION }}-${{ matrix.name }}
+          path: light_md-*.zip
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/v') && runner.os != 'Linux'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The Windows and macOS jobs run at the same time: if both try to create the
+          # release, the second create fails harmlessly and the upload still works.
+          gh release view "$VERSION" > /dev/null 2>&1 || \
+            gh release create "$VERSION" --draft --title "light_md $VERSION" --notes "Release notes to be written." || true
+          sleep 5
+          gh release upload "$VERSION" light_md-*.zip --clobber
