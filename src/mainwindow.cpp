@@ -9,6 +9,7 @@
 
 #include <QAbstractButton>
 #include <QAction>
+#include <QBuffer>
 #include <QActionGroup>
 #include <QCloseEvent>
 #include <QDateTime>
@@ -802,7 +803,7 @@ void MainWindow::updatePreview()
     // Keep the reading position; otherwise the pane jumps to the top on every keystroke.
     QScrollBar *bar = m_preview->verticalScrollBar();
     const int scroll = bar->value();
-    m_preview->setMarkdown(m_editor->toPlainText());
+    m_preview->setMarkdown(Export::renderableMarkdown(m_editor->toPlainText()));
     bar->setValue(scroll);
     syncFromLeader();
 }
@@ -1144,12 +1145,16 @@ void MainWindow::exportPdf()
 }
 
 // Asks where to export, adding `extension` when the name has none. Empty when cancelled.
+// The dialog adds the extension itself, so its "replace the file?" question is about the
+// file that really gets written.
 QString MainWindow::exportPath(const QString &title, const QString &extension, const QString &filter)
 {
-    QString path = QFileDialog::getSaveFileName(this, title, suggestedPath(extension), filter);
-    if (!path.isEmpty() && QFileInfo(path).suffix().compare(extension.mid(1), Qt::CaseInsensitive) != 0)
-        path += extension;
-    return path;
+    QFileDialog dialog(this, title, suggestedPath(extension), filter);
+    dialog.setAcceptMode(QFileDialog::AcceptSave);
+    dialog.setDefaultSuffix(extension.mid(1));
+    if (dialog.exec() != QDialog::Accepted || dialog.selectedFiles().isEmpty())
+        return QString();
+    return dialog.selectedFiles().constFirst();
 }
 
 void MainWindow::exportHtml()
@@ -1178,8 +1183,16 @@ void MainWindow::exportOdt()
     if (path.isEmpty())
         return;
     updatePreview();
-    QTextDocumentWriter writer(path, "odf");
-    if (!writer.write(m_preview->document())) {
+    // Built in memory first, then written in one go: a full disk or a failed write leaves the
+    // previous file as it was. (Qt's writer doesn't report every write error, and closes the
+    // device itself, so it can't write to the QSaveFile directly.)
+    QBuffer buffer;
+    buffer.open(QIODevice::WriteOnly);
+    QTextDocumentWriter writer(&buffer, "odf");
+    const bool built = writer.write(m_preview->document()) && !buffer.data().isEmpty();
+    QSaveFile file(path);
+    if (!built || !file.open(QIODevice::WriteOnly) || file.write(buffer.data()) != buffer.data().size()
+        || !file.commit()) {
         QMessageBox::warning(this, QStringLiteral("Could not export"),
                              QStringLiteral("Could not create the document:\n%1").arg(path));
         return;

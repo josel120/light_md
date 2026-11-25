@@ -1,5 +1,6 @@
 #include "export.h"
 
+#include <QBuffer>
 #include <QDir>
 #include <QFile>
 #include <QImage>
@@ -57,11 +58,49 @@ private slots:
     {
         QTextDocument document;
         document.setMarkdown(QStringLiteral("# Title\n\nText"));
-        const QString path = m_dir.filePath(QStringLiteral("out.odt"));
-        QVERIFY(QTextDocumentWriter(path, "odf").write(&document));
-        QFile file(path);
-        QVERIFY(file.open(QIODevice::ReadOnly));
-        QCOMPARE(file.read(2), QByteArray("PK"));
+        // Into memory first, as exportOdt does, so a failed write never truncates the old file.
+        QBuffer buffer;
+        QVERIFY(buffer.open(QIODevice::WriteOnly));
+        QVERIFY(QTextDocumentWriter(&buffer, "odf").write(&document));
+        QVERIFY(buffer.data().size() > 100);
+        QCOMPARE(buffer.data().left(2), QByteArray("PK"));
+    }
+
+    void pictureWithoutDescriptionIsKept()
+    {
+        const QString html =
+            Export::standaloneHtml(QStringLiteral("![](images/dot.png)"), QStringLiteral("x"), m_dir.path());
+        QVERIFY(html.contains(QStringLiteral("src=\"data:image/png;base64,")));
+    }
+
+    void codeIsNotTouchedWhenFillingDescriptions()
+    {
+        const QString markdown = QStringLiteral("`![](a.png)` and ![](b.png)\n```\n![](c.png)\n```");
+        QCOMPARE(Export::renderableMarkdown(markdown),
+                 QStringLiteral("`![](a.png)` and ![picture](b.png)\n```\n![](c.png)\n```"));
+    }
+
+    void picturesOutsideTheFolderAreNotEmbedded()
+    {
+        QTemporaryDir other;
+        QImage picture(4, 4, QImage::Format_RGB32);
+        picture.fill(Qt::blue);
+        QVERIFY(picture.save(other.filePath(QStringLiteral("private.png"))));
+        const QString link = QUrl::fromLocalFile(other.filePath(QStringLiteral("private.png"))).toString();
+        const QString html = Export::standaloneHtml(
+            QStringLiteral("![a](%1)\n\n![b](../%2/private.png)").arg(link, QDir(other.path()).dirName()),
+            QStringLiteral("x"), m_dir.path());
+        QVERIFY(!html.contains(QStringLiteral("data:")));
+    }
+
+    void scriptLinksAreMadeInactive()
+    {
+        const QString html = Export::standaloneHtml(
+            QStringLiteral("[bad](javascript:alert(1)) [ok](https://example.com) [here](#top)"),
+            QStringLiteral("x"), m_dir.path());
+        QVERIFY(!html.contains(QStringLiteral("javascript:")));
+        QVERIFY(html.contains(QStringLiteral("href=\"https://example.com\"")));
+        QVERIFY(html.contains(QStringLiteral("href=\"#top\"")));
     }
 
     void webAndMissingPicturesAreLeftAlone()
