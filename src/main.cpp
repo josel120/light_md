@@ -31,8 +31,11 @@ static void installTranslations(QApplication &app)
     const QString chosen = QSettings().value(QStringLiteral("language")).toString();
     const QLocale locale(chosen.isEmpty() ? QLocale::system().uiLanguages().value(0) : chosen);
     auto *own = new QTranslator(&app);
-    if (own->load(locale, QStringLiteral("light_md"), QStringLiteral("_"), QStringLiteral(":/i18n")))
-        QApplication::installTranslator(own);
+    // A language light_md doesn't speak stays all English: Qt's own texts in, say, Italian
+    // would put Italian buttons under English questions.
+    if (!own->load(locale, QStringLiteral("light_md"), QStringLiteral("_"), QStringLiteral(":/i18n")))
+        return;
+    QApplication::installTranslator(own);
     // Qt's own texts, such as the buttons of the file dialogs.
     auto *qt = new QTranslator(&app);
     if (qt->load(locale, QStringLiteral("qt"), QStringLiteral("_"), QLibraryInfo::path(QLibraryInfo::TranslationsPath)))
