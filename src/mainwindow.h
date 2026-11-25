@@ -128,6 +128,9 @@ private:
     QString suggestedPath(const QString &extension) const;
     bool saveDocumentAs();
     void exportPdf();
+    QString exportPath(const QString &title, const QString &extension, const QString &filter);
+    void exportHtml();
+    void exportOdt();
     void printDocument();
     void showHelp();
 
