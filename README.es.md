@@ -19,6 +19,7 @@ Escribe a la izquierda y ve el resultado formateado a la derecha, al instante. �
 - Abre y guarda documentos `.md`, también arrastrándolos a la ventana o con "Abrir con" desde el Explorador de archivos.
 - Buscar y reemplazar palabras (Ctrl+F, Ctrl+H), y reabrir tus últimos documentos desde el menú Recent (recientes).
 - Listas de tareas (Checklist) y un menú Insert (insertar) para imágenes, tablas, bloques de código y líneas separadoras. Las imágenes junto a tu documento se ven en la vista previa y en el PDF.
+- Pega una captura de pantalla o cualquier imagen con Ctrl+V: se guarda en una carpeta `images` junto a tu documento y aparece en la vista previa y en el PDF.
 - Exporta a PDF e imprime: el resultado se ve igual que el panel derecho.
 - Deshacer y rehacer, y atajos de teclado (Ctrl+S, Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+1, Ctrl+2).
 - Al abrir la app vuelve al último documento, justo donde lo dejaste (cursor y desplazamiento), y recuerda ese punto en cada documento reciente.

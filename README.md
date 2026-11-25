@@ -24,6 +24,7 @@ Write on the left, see the formatted result on the right. Format with the button
 - Open and save `.md` documents, also by dragging them onto the window or using "Open with" from the file manager.
 - Find and replace words (Ctrl+F, Ctrl+H), and reopen your latest documents from the Recent menu.
 - Checklists, plus an Insert menu for pictures, tables, code blocks and separator lines. Pictures next to your document show up in the preview and the PDF.
+- Paste a screenshot or any picture with Ctrl+V: it is saved in an `images` folder next to your document and shows up in the preview and the PDF.
 - Export to PDF and print: the result looks just like the reading pane.
 - Reopens the document you had open last time, right where you left off (cursor and scroll), and remembers that spot for each recent document.
 - Make the text bigger or smaller in both panes with Ctrl + mouse wheel or Ctrl+Plus / Ctrl+Minus (Ctrl+0 goes back to normal). The size is remembered.
