@@ -1077,7 +1077,7 @@ private:
         }
         if (!m_editMode)
             setEditMode(true);
-        m_editor->textCursor().insertText(QStringLiteral("![](%1)").arg(relative));
+        m_editor->textCursor().insertText(QStringLiteral("![Pasted picture](%1)").arg(relative));
         m_editor->setFocus();
         m_status->setText(QStringLiteral("Picture saved as %1").arg(QDir::toNativeSeparators(relative)));
     }
