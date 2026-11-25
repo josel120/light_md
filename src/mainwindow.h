@@ -121,7 +121,7 @@ private:
     void showUpdateResult();
 
     // New, open, save, export and print.
-    bool askSaveIfModified();
+    bool askSaveIfModified(DocumentTab *tab);
     void newDocument();
     bool closeTab(int index);
     void openDocument();

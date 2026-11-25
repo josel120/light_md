@@ -9,6 +9,7 @@
 
 #include <QAbstractButton>
 #include <QAction>
+#include <QBuffer>
 #include <QActionGroup>
 #include <QCloseEvent>
 #include <QDateTime>
@@ -231,7 +232,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
         if (!m_tabs[i]->editor->document()->isModified())
             continue;
         switchToTab(i);
-        if (!askSaveIfModified()) {
+        if (!askSaveIfModified(m_tabs[i].get())) {
             event->ignore();
             return;
         }
@@ -822,7 +823,7 @@ void MainWindow::updatePreview()
     // Keep the reading position; otherwise the pane jumps to the top on every keystroke.
     QScrollBar *bar = m_preview->verticalScrollBar();
     const int scroll = bar->value();
-    m_preview->setMarkdown(m_editor->toPlainText());
+    m_preview->setMarkdown(Export::renderableMarkdown(m_editor->toPlainText()));
     bar->setValue(scroll);
     syncFromLeader();
 }
@@ -986,14 +987,16 @@ void MainWindow::pasteImage(const QImage &image)
     }
     if (!m_editMode)
         setEditMode(true);
-    m_editor->textCursor().insertText(QStringLiteral("![](%1)").arg(relative));
+    m_editor->textCursor().insertText(QStringLiteral("![%1](%2)").arg(tr("Pasted picture"), relative));
     m_editor->setFocus();
     m_status->setText(tr("Picture saved as %1").arg(QDir::toNativeSeparators(relative)));
 }
 
-bool MainWindow::askSaveIfModified()
+// Asks about `tab`'s unsaved changes and saves it if the user says so. A document opened while
+// the question is up (from Finder, say) switches tabs, so this goes back to `tab` before saving.
+bool MainWindow::askSaveIfModified(DocumentTab *tab)
 {
-    if (!m_editor->document()->isModified())
+    if (!tab->editor->document()->isModified())
         return true;
     QMessageBox box(QMessageBox::Question, tr("Save changes"),
                     tr("You have unsaved changes. Do you want to save them?"),
@@ -1005,8 +1008,13 @@ bool MainWindow::askSaveIfModified()
     const int answer = box.exec();
     if (answer == QMessageBox::Cancel)
         return false;
-    if (answer == QMessageBox::Save)
+    if (answer == QMessageBox::Save) {
+        const int index = indexOf(tab);
+        if (index < 0)
+            return false;
+        switchToTab(index);
         return saveDocument();
+    }
     return true;
 }
 
@@ -1025,7 +1033,11 @@ bool MainWindow::closeTab(int index)
         return false;
     if (tab->editor->document()->isModified()) {
         switchToTab(index);
-        if (!askSaveIfModified())
+        if (!askSaveIfModified(tab))
+            return false;
+        // Tabs opened meanwhile go at the end, but look it up again rather than trust that.
+        index = indexOf(tab);
+        if (index < 0)
             return false;
     }
     rememberPosition(tab);
@@ -1101,14 +1113,32 @@ QString MainWindow::suggestedPath(const QString &extension) const
 
 bool MainWindow::saveDocumentAs()
 {
-    QString path = QFileDialog::getSaveFileName(
-        this, tr("Save as"), suggestedPath(QStringLiteral(".md")),
-        tr("Markdown documents (*.md);;All files (*)"));
-    if (path.isEmpty())
-        return false;
-    if (QFileInfo(path).suffix().isEmpty())
-        path += QStringLiteral(".md");
-    return writeTo(path);
+    DocumentTab *tab = currentTab();
+    QString start = suggestedPath(QStringLiteral(".md"));
+    for (;;) {
+        QString path = QFileDialog::getSaveFileName(
+            this, tr("Save as"), start,
+            tr("Markdown documents (*.md);;All files (*)"));
+        if (path.isEmpty())
+            return false;
+        if (QFileInfo(path).suffix().isEmpty())
+            path += QStringLiteral(".md");
+        // The dialog lets documents open meanwhile (from Finder, say); save the tab that asked.
+        const int index = indexOf(tab);
+        if (index < 0)
+            return false;
+        switchToTab(index);
+        // Two tabs on one file would overwrite each other's work on every save.
+        if (const int owner = indexOfFile(path); owner >= 0 && tabAt(owner) != tab) {
+            QMessageBox::warning(this, tr("Document already open"),
+                                 tr("This document is open in another tab:\n%1\n\n"
+                                    "Choose a different name, or close that tab first.")
+                                     .arg(QDir::toNativeSeparators(path)));
+            start = path;
+            continue;
+        }
+        return writeTo(path);
+    }
 }
 
 void MainWindow::exportPdf()
@@ -1135,12 +1165,16 @@ void MainWindow::exportPdf()
 }
 
 // Asks where to export, adding `extension` when the name has none. Empty when cancelled.
+// The dialog adds the extension itself, so its "replace the file?" question is about the
+// file that really gets written.
 QString MainWindow::exportPath(const QString &title, const QString &extension, const QString &filter)
 {
-    QString path = QFileDialog::getSaveFileName(this, title, suggestedPath(extension), filter);
-    if (!path.isEmpty() && QFileInfo(path).suffix().compare(extension.mid(1), Qt::CaseInsensitive) != 0)
-        path += extension;
-    return path;
+    QFileDialog dialog(this, title, suggestedPath(extension), filter);
+    dialog.setAcceptMode(QFileDialog::AcceptSave);
+    dialog.setDefaultSuffix(extension.mid(1));
+    if (dialog.exec() != QDialog::Accepted || dialog.selectedFiles().isEmpty())
+        return QString();
+    return dialog.selectedFiles().constFirst();
 }
 
 void MainWindow::exportHtml()
@@ -1169,8 +1203,16 @@ void MainWindow::exportOdt()
     if (path.isEmpty())
         return;
     updatePreview();
-    QTextDocumentWriter writer(path, "odf");
-    if (!writer.write(m_preview->document())) {
+    // Built in memory first, then written in one go: a full disk or a failed write leaves the
+    // previous file as it was. (Qt's writer doesn't report every write error, and closes the
+    // device itself, so it can't write to the QSaveFile directly.)
+    QBuffer buffer;
+    buffer.open(QIODevice::WriteOnly);
+    QTextDocumentWriter writer(&buffer, "odf");
+    const bool built = writer.write(m_preview->document()) && !buffer.data().isEmpty();
+    QSaveFile file(path);
+    if (!built || !file.open(QIODevice::WriteOnly) || file.write(buffer.data()) != buffer.data().size()
+        || !file.commit()) {
         QMessageBox::warning(this, tr("Could not export"),
                              tr("Could not create the document:\n%1").arg(path));
         return;

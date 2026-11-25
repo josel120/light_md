@@ -247,6 +247,88 @@ private slots:
         for (const auto &tab : window.m_tabs)
             window.clearRecovery(tab.get());
     }
+
+    void twoCopiesOfOneDocumentGetTwoTabs()
+    {
+        QSettings().clear();
+        writeDocument(3);
+        ThemeManager themes;
+        // Two windows edit the same document, then both crash.
+        auto *first = new MainWindow(&themes, m_path);
+        showWindow(*first);
+        auto *second = new MainWindow(&themes, m_path);
+        showWindow(*second);
+        first->m_editor->insertPlainText(QStringLiteral("first "));
+        QVERIFY(first->writeRecovery(first->currentTab()));
+        second->m_editor->insertPlainText(QStringLiteral("second "));
+        QVERIFY(second->writeRecovery(second->currentTab()));
+        delete first;
+        delete second;
+        QTimer::singleShot(200, [] {
+            if (auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget())) {
+                for (QAbstractButton *button : box->buttons()) {
+                    if (button->text() == QStringLiteral("Restore"))
+                        button->click();
+                }
+            }
+        });
+        MainWindow window(&themes);
+        showWindow(window);
+        QTRY_COMPARE(tabCount(window), 2);
+        QStringList texts;
+        int tiedToTheFile = 0;
+        for (const auto &tab : window.m_tabs) {
+            QVERIFY(tab->editor->document()->isModified());
+            texts.append(tab->editor->toPlainText().section(QLatin1Char(' '), 0, 0));
+            tiedToTheFile += tab->filePath == m_path ? 1 : 0;
+        }
+        texts.sort();
+        QCOMPARE(texts, QStringList({QStringLiteral("first"), QStringLiteral("second")}));
+        QCOMPARE(tiedToTheFile, 1);
+        for (const auto &tab : window.m_tabs)
+            window.clearRecovery(tab.get());
+    }
+
+    void closingSavesTheTabItAskedAbout()
+    {
+        QSettings().clear();
+        writeDocument(3);
+        const QString other = writeOther(QStringLiteral("other.md"));
+        ThemeManager themes;
+        MainWindow window(&themes, m_path);
+        showWindow(window);
+        window.m_editor->insertPlainText(QStringLiteral("keep me "));
+        // While "Save changes?" is up, another document opens (from Finder, say); then Save.
+        QTimer::singleShot(200, [&window, other] {
+            if (auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget())) {
+                window.loadFile(other);
+                box->button(QMessageBox::Save)->click();
+            }
+        });
+        QVERIFY(window.closeTab(0));
+        QCOMPARE(tabCount(window), 1);
+        QCOMPARE(window.m_filePath, other);
+        QFile saved(m_path);
+        QVERIFY(saved.open(QIODevice::ReadOnly));
+        QVERIFY(saved.readAll().startsWith("keep me "));
+        QFile untouched(other);
+        QVERIFY(untouched.open(QIODevice::ReadOnly));
+        QCOMPARE(untouched.readAll(), QByteArray("# other.md\n"));
+    }
+
+    void anotherSpellingFindsTheSameTab()
+    {
+        QSettings().clear();
+        ThemeManager themes;
+        MainWindow window(&themes, m_path);
+        showWindow(window);
+        QCOMPARE(window.indexOfFile(m_dir.filePath(QStringLiteral("./long.md"))), 0);
+#ifdef Q_OS_WIN
+        // Windows paths ignore case.
+        QCOMPARE(window.indexOfFile(m_path.toUpper()), 0);
+#endif
+        QCOMPARE(window.indexOfFile(m_dir.filePath(QStringLiteral("missing.md"))), -1);
+    }
 };
 
 QTEST_MAIN(TestSession)

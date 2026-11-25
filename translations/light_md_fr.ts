@@ -1,4 +1,5 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
 <TS version="2.1" language="fr">
 <context>
     <name>FindBar</name>
@@ -36,11 +37,11 @@
     </message>
     <message>
         <source>Find the previous match (Shift+F3)</source>
-        <translation>Trouver l'occurrence précédente (Maj+F3)</translation>
+        <translation>Trouver l&apos;occurrence précédente (Maj+F3)</translation>
     </message>
     <message>
         <source>Find the next match (Enter or F3)</source>
-        <translation>Trouver l'occurrence suivante (Entrée ou F3)</translation>
+        <translation>Trouver l&apos;occurrence suivante (Entrée ou F3)</translation>
     </message>
     <message>
         <source>Hide the find bar (Esc)</source>
@@ -104,13 +105,13 @@ Write on the **left** and see the result on the *right*.
 
 - Utilisez les boutons du haut pour mettre en forme votre texte
 - Masquez les boutons à tout moment avec **Options → Afficher les boutons** (Ctrl+Shift+B)
-- **Ctrl+E** affiche ou masque le volet d'écriture ; **Ctrl+R** ou **Échap** passe en Lecture seule
+- **Ctrl+E** affiche ou masque le volet d&apos;écriture ; **Ctrl+R** ou **Échap** passe en Lecture seule
 - **Ctrl+N** ouvre un nouvel onglet ; chaque action se trouve aussi dans **Options**, avec son raccourci
 </translation>
     </message>
     <message>
         <source>Could not open</source>
-        <translation>Impossible d'ouvrir</translation>
+        <translation>Impossible d&apos;ouvrir</translation>
     </message>
     <message>
         <source>Could not read the file:
@@ -160,7 +161,7 @@ Write on the **left** and see the result on the *right*.
     </message>
     <message>
         <source>&amp;Close tab</source>
-        <translation>&amp;Fermer l'onglet</translation>
+        <translation>&amp;Fermer l&apos;onglet</translation>
     </message>
     <message>
         <source>Close this document</source>
@@ -204,7 +205,7 @@ Write on the **left** and see the result on the *right*.
     </message>
     <message>
         <source>Create a document that opens in Word, LibreOffice or Google Docs</source>
-        <translation>Créer un document qui s'ouvre dans Word, LibreOffice ou Google Docs</translation>
+        <translation>Créer un document qui s&apos;ouvre dans Word, LibreOffice ou Google Docs</translation>
     </message>
     <message>
         <source>&amp;Print...</source>
@@ -236,7 +237,7 @@ Write on the **left** and see the result on the *right*.
     </message>
     <message>
         <source>Go to the next match</source>
-        <translation>Aller à l'occurrence suivante</translation>
+        <translation>Aller à l&apos;occurrence suivante</translation>
     </message>
     <message>
         <source>Find pre&amp;vious</source>
@@ -244,7 +245,7 @@ Write on the **left** and see the result on the *right*.
     </message>
     <message>
         <source>Go to the previous match</source>
-        <translation>Aller à l'occurrence précédente</translation>
+        <translation>Aller à l&apos;occurrence précédente</translation>
     </message>
     <message>
         <source>&amp;Edit document</source>
@@ -252,7 +253,7 @@ Write on the **left** and see the result on the *right*.
     </message>
     <message>
         <source>Show the writing pane</source>
-        <translation>Afficher le volet d'écriture</translation>
+        <translation>Afficher le volet d&apos;écriture</translation>
     </message>
     <message>
         <source>&amp;Read only</source>
@@ -260,7 +261,7 @@ Write on the **left** and see the result on the *right*.
     </message>
     <message>
         <source>Hide the writing pane and just read</source>
-        <translation>Masquer le volet d'écriture et simplement lire</translation>
+        <translation>Masquer le volet d&apos;écriture et simplement lire</translation>
     </message>
     <message>
         <source>Show &amp;buttons</source>
@@ -276,7 +277,7 @@ Write on the **left** and see the result on the *right*.
     </message>
     <message>
         <source>Scroll the writing pane and the preview together</source>
-        <translation>Faire défiler ensemble le volet d'écriture et l'aperçu</translation>
+        <translation>Faire défiler ensemble le volet d&apos;écriture et l&apos;aperçu</translation>
     </message>
     <message>
         <source>&amp;Text size</source>
@@ -444,7 +445,7 @@ Write on the **left** and see the result on the *right*.
     </message>
     <message>
         <source>Omarchy theme is only available on Omarchy Linux</source>
-        <translation>Le thème Omarchy n'est disponible que sous Omarchy Linux</translation>
+        <translation>Le thème Omarchy n&apos;est disponible que sous Omarchy Linux</translation>
     </message>
     <message>
         <source>&amp;Language</source>
@@ -560,25 +561,29 @@ Write on the **left** and see the result on the *right*.
     </message>
     <message>
         <source>Save the document first</source>
-        <translation>Enregistrez d'abord le document</translation>
+        <translation>Enregistrez d&apos;abord le document</translation>
     </message>
     <message>
         <source>Pasted pictures are kept in a folder next to the document, so the document needs to be saved first.
 
 Save it now?</source>
-        <translation>Les images collées sont rangées dans un dossier à côté du document, il faut donc d'abord l'enregistrer.
+        <translation>Les images collées sont rangées dans un dossier à côté du document, il faut donc d&apos;abord l&apos;enregistrer.
 
-L'enregistrer maintenant ?</translation>
+L&apos;enregistrer maintenant ?</translation>
     </message>
     <message>
         <source>Could not paste the picture</source>
-        <translation>Impossible de coller l'image</translation>
+        <translation>Impossible de coller l&apos;image</translation>
     </message>
     <message>
         <source>Could not save the picture in:
 %1</source>
-        <translation>Impossible d'enregistrer l'image dans :
+        <translation>Impossible d&apos;enregistrer l&apos;image dans :
 %1</translation>
+    </message>
+    <message>
+        <source>Pasted picture</source>
+        <translation>Image collée</translation>
     </message>
     <message>
         <source>Picture saved as %1</source>
@@ -597,7 +602,7 @@ L'enregistrer maintenant ?</translation>
         <translation>Enregistrer</translation>
     </message>
     <message>
-        <source>Don't save</source>
+        <source>Don&apos;t save</source>
         <translation>Ne pas enregistrer</translation>
     </message>
     <message>
@@ -614,18 +619,18 @@ L'enregistrer maintenant ?</translation>
     </message>
     <message>
         <source>Could not save</source>
-        <translation>Impossible d'enregistrer</translation>
+        <translation>Impossible d&apos;enregistrer</translation>
     </message>
     <message>
         <source>Could not write to the file:
 %1</source>
-        <translation>Impossible d'écrire dans le fichier :
+        <translation>Impossible d&apos;écrire dans le fichier :
 %1</translation>
     </message>
     <message>
         <source>Could not finish saving:
 %1</source>
-        <translation>Impossible de terminer l'enregistrement :
+        <translation>Impossible de terminer l&apos;enregistrement :
 %1</translation>
     </message>
     <message>
@@ -637,6 +642,20 @@ L'enregistrer maintenant ?</translation>
         <translation>Documents Markdown (*.md);;Tous les fichiers (*)</translation>
     </message>
     <message>
+        <source>Document already open</source>
+        <translation>Document déjà ouvert</translation>
+    </message>
+    <message>
+        <source>This document is open in another tab:
+%1
+
+Choose a different name, or close that tab first.</source>
+        <translation>Ce document est ouvert dans un autre onglet :
+%1
+
+Choisissez un autre nom, ou fermez d&apos;abord cet onglet.</translation>
+    </message>
+    <message>
         <source>Export to PDF</source>
         <translation>Exporter en PDF</translation>
     </message>
@@ -646,7 +665,7 @@ L'enregistrer maintenant ?</translation>
     </message>
     <message>
         <source>Could not export</source>
-        <translation>Impossible d'exporter</translation>
+        <translation>Impossible d&apos;exporter</translation>
     </message>
     <message>
         <source>Could not create the PDF:
@@ -704,7 +723,7 @@ L'enregistrer maintenant ?</translation>
     </message>
     <message>
         <source>&lt;p&gt;By default you get the &lt;b&gt;classic&lt;/b&gt; layout: file and format buttons plus write + preview panes. Hide the buttons anytime for a minimal look. Your last button and Edit/Reader choices are remembered the next time you open the app or another file.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Layout&lt;/b&gt;&lt;br&gt;Ctrl+Shift+B — Show / hide buttons&lt;br&gt;Ctrl+E — Edit document (show writing pane)&lt;br&gt;Ctrl+R or Esc — Read only&lt;br&gt;&lt;i&gt;Sync scrolling&lt;/i&gt; (Options) — the preview follows the writing pane&lt;br&gt;Ctrl++ / Ctrl+- / Ctrl+0 — Bigger / smaller / normal text (or Ctrl + mouse wheel)&lt;/p&gt;&lt;p&gt;&lt;b&gt;File&lt;/b&gt;&lt;br&gt;Ctrl+N New · Ctrl+O Open · Ctrl+S Save · Ctrl+Shift+S Save as&lt;br&gt;Ctrl+Shift+E Export PDF · Ctrl+P Print · Options → Export to HTML or for Word (.odt)&lt;/p&gt;&lt;p&gt;&lt;b&gt;Format&lt;/b&gt; (while editing)&lt;br&gt;Ctrl+Z Undo · Ctrl+Shift+Z / Ctrl+Y Redo&lt;br&gt;Ctrl+B Bold · Ctrl+I Italic · Ctrl+K Link&lt;br&gt;Ctrl+1 Big title · Ctrl+2 Subtitle&lt;br&gt;Ctrl+Shift+8 Bullet list · Ctrl+Shift+7 Numbered list · Ctrl+Shift+9 Checklist · Ctrl+Shift+. Quote&lt;/p&gt;&lt;p&gt;&lt;b&gt;Insert&lt;/b&gt; (button or Options → Format → Insert)&lt;br&gt;Ctrl+Shift+P Picture · Ctrl+Shift+T Table · Ctrl+Shift+C Code block · Ctrl+Shift+L Separator line&lt;br&gt;Ctrl+V with a picture on the clipboard (a screenshot, say) saves it in an &lt;i&gt;images&lt;/i&gt; folder next to the document and adds it&lt;/p&gt;&lt;p&gt;&lt;b&gt;Tabs&lt;/b&gt;&lt;br&gt;Ctrl+N New tab · Ctrl+W Close tab · Ctrl+Tab / Ctrl+Shift+Tab Next / previous tab. Opening a document puts it in its own tab, and your tabs come back the next time.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Find&lt;/b&gt;&lt;br&gt;Ctrl+F Find · Ctrl+H Replace · F3 / Shift+F3 Next / previous match · Esc closes the find bar&lt;/p&gt;&lt;p&gt;&lt;b&gt;Theme&lt;/b&gt;&lt;br&gt;Ctrl+Shift+1 System · Ctrl+Shift+2 Minimal · Ctrl+Shift+3 Omarchy (Omarchy only where available) · Ctrl+Shift+4 Dark&lt;/p&gt;&lt;p&gt;&lt;b&gt;Easy to read while you write&lt;/b&gt;&lt;br&gt;Titles show bigger, bold and italic look the part, links and code stand out and quotes are dimmed. The Markdown symbols stay, in a quieter color.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Never lose your work&lt;/b&gt;&lt;br&gt;A few seconds after each change, light_md keeps a recovery copy. If it closes unexpectedly, it offers to restore your unsaved changes the next time you open it.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Updates&lt;/b&gt;&lt;br&gt;&lt;i&gt;Check for updates&lt;/i&gt; tells you when a new version is ready and downloads it.&lt;/p&gt;&lt;p&gt;F1 — Help. You can also drag a document onto the window to open it, or reopen one from &lt;i&gt;Recent&lt;/i&gt;.&lt;/p&gt;</source>
-        <translation>&lt;p&gt;Par défaut, vous avez la disposition &lt;b&gt;classique&lt;/b&gt; : boutons de fichier et de mise en forme, plus les volets d'écriture et d'aperçu. Masquez les boutons à tout moment pour une allure minimale. Vos derniers choix de boutons et de Modifier/Lecture sont retenus à la prochaine ouverture de l'application ou d'un autre fichier.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Disposition&lt;/b&gt;&lt;br&gt;Ctrl+Shift+B — Afficher / masquer les boutons&lt;br&gt;Ctrl+E — Modifier le document (afficher le volet d'écriture)&lt;br&gt;Ctrl+R ou Échap — Lecture seule&lt;br&gt;&lt;i&gt;Défilement synchronisé&lt;/i&gt; (Options) — l'aperçu suit le volet d'écriture&lt;br&gt;Ctrl++ / Ctrl+- / Ctrl+0 — Texte plus grand / plus petit / normal (ou Ctrl + molette)&lt;/p&gt;&lt;p&gt;&lt;b&gt;Fichier&lt;/b&gt;&lt;br&gt;Ctrl+N Nouveau · Ctrl+O Ouvrir · Ctrl+S Enregistrer · Ctrl+Shift+S Enregistrer sous&lt;br&gt;Ctrl+Shift+E Exporter en PDF · Ctrl+P Imprimer · Options → Exporter en HTML ou pour Word (.odt)&lt;/p&gt;&lt;p&gt;&lt;b&gt;Format&lt;/b&gt; (pendant l'écriture)&lt;br&gt;Ctrl+Z Annuler · Ctrl+Shift+Z / Ctrl+Y Rétablir&lt;br&gt;Ctrl+B Gras · Ctrl+I Italique · Ctrl+K Lien&lt;br&gt;Ctrl+1 Grand titre · Ctrl+2 Sous-titre&lt;br&gt;Ctrl+Shift+8 Liste à puces · Ctrl+Shift+7 Liste numérotée · Ctrl+Shift+9 Liste de tâches · Ctrl+Shift+. Citation&lt;/p&gt;&lt;p&gt;&lt;b&gt;Insérer&lt;/b&gt; (bouton ou Options → Format → Insérer)&lt;br&gt;Ctrl+Shift+P Image · Ctrl+Shift+T Tableau · Ctrl+Shift+C Bloc de code · Ctrl+Shift+L Ligne de séparation&lt;br&gt;Ctrl+V avec une image dans le presse-papiers (une capture d'écran, par exemple) l'enregistre dans un dossier &lt;i&gt;images&lt;/i&gt; à côté du document et l'ajoute&lt;/p&gt;&lt;p&gt;&lt;b&gt;Onglets&lt;/b&gt;&lt;br&gt;Ctrl+N Nouvel onglet · Ctrl+W Fermer l'onglet · Ctrl+Tab / Ctrl+Shift+Tab Onglet suivant / précédent. Chaque document ouvert a son propre onglet, et vos onglets reviennent la fois suivante.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Rechercher&lt;/b&gt;&lt;br&gt;Ctrl+F Rechercher · Ctrl+H Remplacer · F3 / Shift+F3 Occurrence suivante / précédente · Échap ferme la barre de recherche&lt;/p&gt;&lt;p&gt;&lt;b&gt;Thème&lt;/b&gt;&lt;br&gt;Ctrl+Shift+1 Système · Ctrl+Shift+2 Minimal · Ctrl+Shift+3 Omarchy (seulement là où il est disponible) · Ctrl+Shift+4 Sombre&lt;/p&gt;&lt;p&gt;&lt;b&gt;Facile à lire pendant l'écriture&lt;/b&gt;&lt;br&gt;Les titres sont plus grands, le gras et l'italique se voient, les liens et le code ressortent et les citations sont atténuées. Les symboles Markdown restent, dans une couleur plus discrète.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Ne perdez jamais votre travail&lt;/b&gt;&lt;br&gt;Quelques secondes après chaque modification, light_md garde une copie de récupération. S'il se ferme brusquement, il propose de restaurer vos modifications non enregistrées à la prochaine ouverture.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Mises à jour&lt;/b&gt;&lt;br&gt;&lt;i&gt;Rechercher des mises à jour&lt;/i&gt; vous prévient quand une nouvelle version est prête et la télécharge.&lt;/p&gt;&lt;p&gt;F1 — Aide. Vous pouvez aussi glisser un document sur la fenêtre pour l'ouvrir, ou le rouvrir depuis &lt;i&gt;Récents&lt;/i&gt;.&lt;/p&gt;</translation>
+        <translation>&lt;p&gt;Par défaut, vous avez la disposition &lt;b&gt;classique&lt;/b&gt; : boutons de fichier et de mise en forme, plus les volets d&apos;écriture et d&apos;aperçu. Masquez les boutons à tout moment pour une allure minimale. Vos derniers choix de boutons et de Modifier/Lecture sont retenus à la prochaine ouverture de l&apos;application ou d&apos;un autre fichier.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Disposition&lt;/b&gt;&lt;br&gt;Ctrl+Shift+B — Afficher / masquer les boutons&lt;br&gt;Ctrl+E — Modifier le document (afficher le volet d&apos;écriture)&lt;br&gt;Ctrl+R ou Échap — Lecture seule&lt;br&gt;&lt;i&gt;Défilement synchronisé&lt;/i&gt; (Options) — l&apos;aperçu suit le volet d&apos;écriture&lt;br&gt;Ctrl++ / Ctrl+- / Ctrl+0 — Texte plus grand / plus petit / normal (ou Ctrl + molette)&lt;/p&gt;&lt;p&gt;&lt;b&gt;Fichier&lt;/b&gt;&lt;br&gt;Ctrl+N Nouveau · Ctrl+O Ouvrir · Ctrl+S Enregistrer · Ctrl+Shift+S Enregistrer sous&lt;br&gt;Ctrl+Shift+E Exporter en PDF · Ctrl+P Imprimer · Options → Exporter en HTML ou pour Word (.odt)&lt;/p&gt;&lt;p&gt;&lt;b&gt;Format&lt;/b&gt; (pendant l&apos;écriture)&lt;br&gt;Ctrl+Z Annuler · Ctrl+Shift+Z / Ctrl+Y Rétablir&lt;br&gt;Ctrl+B Gras · Ctrl+I Italique · Ctrl+K Lien&lt;br&gt;Ctrl+1 Grand titre · Ctrl+2 Sous-titre&lt;br&gt;Ctrl+Shift+8 Liste à puces · Ctrl+Shift+7 Liste numérotée · Ctrl+Shift+9 Liste de tâches · Ctrl+Shift+. Citation&lt;/p&gt;&lt;p&gt;&lt;b&gt;Insérer&lt;/b&gt; (bouton ou Options → Format → Insérer)&lt;br&gt;Ctrl+Shift+P Image · Ctrl+Shift+T Tableau · Ctrl+Shift+C Bloc de code · Ctrl+Shift+L Ligne de séparation&lt;br&gt;Ctrl+V avec une image dans le presse-papiers (une capture d&apos;écran, par exemple) l&apos;enregistre dans un dossier &lt;i&gt;images&lt;/i&gt; à côté du document et l&apos;ajoute&lt;/p&gt;&lt;p&gt;&lt;b&gt;Onglets&lt;/b&gt;&lt;br&gt;Ctrl+N Nouvel onglet · Ctrl+W Fermer l&apos;onglet · Ctrl+Tab / Ctrl+Shift+Tab Onglet suivant / précédent. Chaque document ouvert a son propre onglet, et vos onglets reviennent la fois suivante.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Rechercher&lt;/b&gt;&lt;br&gt;Ctrl+F Rechercher · Ctrl+H Remplacer · F3 / Shift+F3 Occurrence suivante / précédente · Échap ferme la barre de recherche&lt;/p&gt;&lt;p&gt;&lt;b&gt;Thème&lt;/b&gt;&lt;br&gt;Ctrl+Shift+1 Système · Ctrl+Shift+2 Minimal · Ctrl+Shift+3 Omarchy (seulement là où il est disponible) · Ctrl+Shift+4 Sombre&lt;/p&gt;&lt;p&gt;&lt;b&gt;Facile à lire pendant l&apos;écriture&lt;/b&gt;&lt;br&gt;Les titres sont plus grands, le gras et l&apos;italique se voient, les liens et le code ressortent et les citations sont atténuées. Les symboles Markdown restent, dans une couleur plus discrète.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Ne perdez jamais votre travail&lt;/b&gt;&lt;br&gt;Quelques secondes après chaque modification, light_md garde une copie de récupération. S&apos;il se ferme brusquement, il propose de restaurer vos modifications non enregistrées à la prochaine ouverture.&lt;/p&gt;&lt;p&gt;&lt;b&gt;Mises à jour&lt;/b&gt;&lt;br&gt;&lt;i&gt;Rechercher des mises à jour&lt;/i&gt; vous prévient quand une nouvelle version est prête et la télécharge.&lt;/p&gt;&lt;p&gt;F1 — Aide. Vous pouvez aussi glisser un document sur la fenêtre pour l&apos;ouvrir, ou le rouvrir depuis &lt;i&gt;Récents&lt;/i&gt;.&lt;/p&gt;</translation>
     </message>
     <message>
         <source>a new document</source>
@@ -712,11 +731,11 @@ L'enregistrer maintenant ?</translation>
     </message>
     <message>
         <source>light_md closed unexpectedly while you had unsaved changes in &lt;b&gt;%1&lt;/b&gt;.&lt;br&gt;A copy was kept automatically at %2.&lt;br&gt;&lt;br&gt;Do you want to get those changes back?</source>
-        <translation>light_md s'est fermé de façon inattendue alors que vous aviez des modifications non enregistrées dans &lt;b&gt;%1&lt;/b&gt;.&lt;br&gt;Une copie a été gardée automatiquement à %2.&lt;br&gt;&lt;br&gt;Voulez-vous récupérer ces modifications ?</translation>
+        <translation>light_md s&apos;est fermé de façon inattendue alors que vous aviez des modifications non enregistrées dans &lt;b&gt;%1&lt;/b&gt;.&lt;br&gt;Une copie a été gardée automatiquement à %2.&lt;br&gt;&lt;br&gt;Voulez-vous récupérer ces modifications ?</translation>
     </message>
     <message>
         <source>light_md closed unexpectedly while you had unsaved changes in %1 documents: %2.&lt;br&gt;Copies were kept automatically.&lt;br&gt;&lt;br&gt;Do you want to get those changes back? Each one opens in its own tab.</source>
-        <translation>light_md s'est fermé de façon inattendue alors que vous aviez des modifications non enregistrées dans %1 documents : %2.&lt;br&gt;Des copies ont été gardées automatiquement.&lt;br&gt;&lt;br&gt;Voulez-vous récupérer ces modifications ? Chacun s'ouvre dans son propre onglet.</translation>
+        <translation>light_md s&apos;est fermé de façon inattendue alors que vous aviez des modifications non enregistrées dans %1 documents : %2.&lt;br&gt;Des copies ont été gardées automatiquement.&lt;br&gt;&lt;br&gt;Voulez-vous récupérer ces modifications ? Chacun s&apos;ouvre dans son propre onglet.</translation>
     </message>
     <message>
         <source>Restore unsaved changes?</source>
@@ -729,6 +748,10 @@ L'enregistrer maintenant ?</translation>
     <message>
         <source>Discard</source>
         <translation>Abandonner</translation>
+    </message>
+    <message>
+        <source>Unsaved changes restored. Older copies of the same document opened as new documents; use Save As to keep them.</source>
+        <translation>Modifications non enregistrées récupérées. Les copies plus anciennes du même document ont été ouvertes comme nouveaux documents ; utilisez Enregistrer sous pour les conserver.</translation>
     </message>
     <message>
         <source>Unsaved changes restored. Save to keep them.</source>
@@ -762,11 +785,11 @@ Il a été retiré de la liste.</translation>
     </message>
     <message>
         <source>When the download finishes, close light_md, unzip the file and replace the old light_md folder with the new one. Your documents are not affected.</source>
-        <translation>Une fois le téléchargement terminé, fermez light_md, décompressez le fichier et remplacez l'ancien dossier light_md par le nouveau. Vos documents ne sont pas touchés.</translation>
+        <translation>Une fois le téléchargement terminé, fermez light_md, décompressez le fichier et remplacez l&apos;ancien dossier light_md par le nouveau. Vos documents ne sont pas touchés.</translation>
     </message>
     <message>
         <source>When the download finishes, close light_md, unzip the file and drag light_md to your Applications folder, replacing the old one.</source>
-        <translation>Une fois le téléchargement terminé, fermez light_md, décompressez le fichier et glissez light_md dans le dossier Applications, en remplaçant l'ancien.</translation>
+        <translation>Une fois le téléchargement terminé, fermez light_md, décompressez le fichier et glissez light_md dans le dossier Applications, en remplaçant l&apos;ancien.</translation>
     </message>
     <message>
         <source>Install the new version the same way you installed this one.</source>
@@ -809,7 +832,7 @@ Il a été retiré de la liste.</translation>
         <translation>Télécharger</translation>
     </message>
     <message>
-        <source>What's new</source>
+        <source>What&apos;s new</source>
         <translation>Nouveautés</translation>
     </message>
     <message>

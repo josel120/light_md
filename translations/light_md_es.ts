@@ -1,4 +1,5 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
 <TS version="2.1" language="es">
 <context>
     <name>FindBar</name>
@@ -581,6 +582,10 @@ Save it now?</source>
 %1</translation>
     </message>
     <message>
+        <source>Pasted picture</source>
+        <translation>Imagen pegada</translation>
+    </message>
+    <message>
         <source>Picture saved as %1</source>
         <translation>Imagen guardada como %1</translation>
     </message>
@@ -597,7 +602,7 @@ Save it now?</source>
         <translation>Guardar</translation>
     </message>
     <message>
-        <source>Don't save</source>
+        <source>Don&apos;t save</source>
         <translation>No guardar</translation>
     </message>
     <message>
@@ -635,6 +640,20 @@ Save it now?</source>
     <message>
         <source>Markdown documents (*.md);;All files (*)</source>
         <translation>Documentos Markdown (*.md);;Todos los archivos (*)</translation>
+    </message>
+    <message>
+        <source>Document already open</source>
+        <translation>Documento ya abierto</translation>
+    </message>
+    <message>
+        <source>This document is open in another tab:
+%1
+
+Choose a different name, or close that tab first.</source>
+        <translation>Este documento está abierto en otra pestaña:
+%1
+
+Elige otro nombre o cierra antes esa pestaña.</translation>
     </message>
     <message>
         <source>Export to PDF</source>
@@ -731,6 +750,10 @@ Save it now?</source>
         <translation>Descartar</translation>
     </message>
     <message>
+        <source>Unsaved changes restored. Older copies of the same document opened as new documents; use Save As to keep them.</source>
+        <translation>Cambios sin guardar recuperados. Las copias más antiguas del mismo documento se abrieron como documentos nuevos; usa Guardar como para conservarlas.</translation>
+    </message>
+    <message>
         <source>Unsaved changes restored. Save to keep them.</source>
         <translation>Cambios sin guardar recuperados. Guarda para conservarlos.</translation>
     </message>
@@ -809,7 +832,7 @@ Se quitó de la lista.</translation>
         <translation>Descargar</translation>
     </message>
     <message>
-        <source>What's new</source>
+        <source>What&apos;s new</source>
         <translation>Novedades</translation>
     </message>
     <message>

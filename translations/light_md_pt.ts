@@ -1,4 +1,5 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
 <TS version="2.1" language="pt">
 <context>
     <name>FindBar</name>
@@ -581,6 +582,10 @@ Salvar agora?</translation>
 %1</translation>
     </message>
     <message>
+        <source>Pasted picture</source>
+        <translation>Imagem colada</translation>
+    </message>
+    <message>
         <source>Picture saved as %1</source>
         <translation>Imagem salva como %1</translation>
     </message>
@@ -597,7 +602,7 @@ Salvar agora?</translation>
         <translation>Salvar</translation>
     </message>
     <message>
-        <source>Don't save</source>
+        <source>Don&apos;t save</source>
         <translation>Não salvar</translation>
     </message>
     <message>
@@ -635,6 +640,20 @@ Salvar agora?</translation>
     <message>
         <source>Markdown documents (*.md);;All files (*)</source>
         <translation>Documentos Markdown (*.md);;Todos os arquivos (*)</translation>
+    </message>
+    <message>
+        <source>Document already open</source>
+        <translation>Documento já aberto</translation>
+    </message>
+    <message>
+        <source>This document is open in another tab:
+%1
+
+Choose a different name, or close that tab first.</source>
+        <translation>Este documento está aberto em outra aba:
+%1
+
+Escolha outro nome ou feche essa aba primeiro.</translation>
     </message>
     <message>
         <source>Export to PDF</source>
@@ -731,6 +750,10 @@ Salvar agora?</translation>
         <translation>Descartar</translation>
     </message>
     <message>
+        <source>Unsaved changes restored. Older copies of the same document opened as new documents; use Save As to keep them.</source>
+        <translation>Alterações não salvas recuperadas. As cópias mais antigas do mesmo documento foram abertas como documentos novos; use Salvar como para mantê-las.</translation>
+    </message>
+    <message>
         <source>Unsaved changes restored. Save to keep them.</source>
         <translation>Alterações não salvas recuperadas. Salve para mantê-las.</translation>
     </message>
@@ -809,7 +832,7 @@ Ele foi removido da lista.</translation>
         <translation>Baixar</translation>
     </message>
     <message>
-        <source>What's new</source>
+        <source>What&apos;s new</source>
         <translation>Novidades</translation>
     </message>
     <message>

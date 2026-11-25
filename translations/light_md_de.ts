@@ -1,4 +1,5 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
 <TS version="2.1" language="de">
 <context>
     <name>FindBar</name>
@@ -581,6 +582,10 @@ Jetzt speichern?</translation>
 %1</translation>
     </message>
     <message>
+        <source>Pasted picture</source>
+        <translation>Eingefügtes Bild</translation>
+    </message>
+    <message>
         <source>Picture saved as %1</source>
         <translation>Bild gespeichert als %1</translation>
     </message>
@@ -597,7 +602,7 @@ Jetzt speichern?</translation>
         <translation>Speichern</translation>
     </message>
     <message>
-        <source>Don't save</source>
+        <source>Don&apos;t save</source>
         <translation>Nicht speichern</translation>
     </message>
     <message>
@@ -635,6 +640,20 @@ Jetzt speichern?</translation>
     <message>
         <source>Markdown documents (*.md);;All files (*)</source>
         <translation>Markdown-Dokumente (*.md);;Alle Dateien (*)</translation>
+    </message>
+    <message>
+        <source>Document already open</source>
+        <translation>Dokument bereits geöffnet</translation>
+    </message>
+    <message>
+        <source>This document is open in another tab:
+%1
+
+Choose a different name, or close that tab first.</source>
+        <translation>Dieses Dokument ist in einem anderen Tab geöffnet:
+%1
+
+Wähle einen anderen Namen oder schließe zuerst diesen Tab.</translation>
     </message>
     <message>
         <source>Export to PDF</source>
@@ -731,6 +750,10 @@ Jetzt speichern?</translation>
         <translation>Verwerfen</translation>
     </message>
     <message>
+        <source>Unsaved changes restored. Older copies of the same document opened as new documents; use Save As to keep them.</source>
+        <translation>Ungespeicherte Änderungen wiederhergestellt. Ältere Kopien desselben Dokuments wurden als neue Dokumente geöffnet; mit „Speichern unter“ kannst du sie behalten.</translation>
+    </message>
+    <message>
         <source>Unsaved changes restored. Save to keep them.</source>
         <translation>Ungespeicherte Änderungen wiederhergestellt. Speichere, um sie zu behalten.</translation>
     </message>
@@ -809,7 +832,7 @@ Es wurde aus der Liste entfernt.</translation>
         <translation>Herunterladen</translation>
     </message>
     <message>
-        <source>What's new</source>
+        <source>What&apos;s new</source>
         <translation>Neuigkeiten</translation>
     </message>
     <message>

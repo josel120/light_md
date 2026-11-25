@@ -196,10 +196,11 @@ void MainWindow::offerRecovery()
     }
     if (copies.empty())
         return;
-    // Oldest first, so if two copies belong to the same document the newest one wins.
+    // Newest first: if two copies belong to the same document (two windows had it open), the
+    // newest is restored into that document and the others open as new documents.
     const auto savedAt = [](const LeftBehind &copy) { return copy.info.value(QStringLiteral("savedAt")).toString(); };
     std::sort(copies.begin(), copies.end(),
-              [&](const LeftBehind &a, const LeftBehind &b) { return savedAt(a) < savedAt(b); });
+              [&](const LeftBehind &a, const LeftBehind &b) { return savedAt(a) > savedAt(b); });
 
     const auto nameOf = [](const LeftBehind &copy) {
         const QString path = copy.info.value(QStringLiteral("path")).toString();
@@ -230,6 +231,7 @@ void MainWindow::offerRecovery()
     box.setDefaultButton(restore);
     box.exec();
 
+    int extraCopies = 0;
     for (const LeftBehind &copy : copies) {
         const auto deleteOldCopy = [&] {
             QFile::remove(folder.filePath(copy.id + QStringLiteral(".json")));
@@ -247,16 +249,21 @@ void MainWindow::offerRecovery()
         const QString text = QString::fromUtf8(textFile.readAll());
         textFile.close();
 
-        // Open the original document first, so Save writes back to it.
+        // Open the original document first, so Save writes back to it. If a newer copy of it
+        // was just restored there, this one gets its own untitled tab and needs Save As.
         const QString path = copy.info.value(QStringLiteral("path")).toString();
-        if (!path.isEmpty() && QFileInfo::exists(path)) {
+        const int open = indexOfFile(path);
+        const bool taken = open >= 0 && tabAt(open)->editor->document()->isModified();
+        if (taken)
+            ++extraCopies;
+        if (!taken && !path.isEmpty() && QFileInfo::exists(path)) {
             if (!loadFile(path))
                 continue;
         } else {
             if (!isSpare(currentTab()))
                 switchToTab(indexOf(addTab()));
             // A moved or deleted original keeps its name, so Save recreates it there.
-            if (!path.isEmpty())
+            if (!taken && !path.isEmpty())
                 setFilePath(path);
         }
         // Replace through the cursor so the change can be undone (Ctrl+Z shows the saved version).
@@ -270,7 +277,10 @@ void MainWindow::offerRecovery()
         if (writeRecovery(currentTab()))
             deleteOldCopy();
     }
-    if (box.clickedButton() == restore)
+    if (box.clickedButton() == restore && extraCopies > 0)
+        m_status->setText(tr("Unsaved changes restored. Older copies of the same document "
+                                "opened as new documents; use Save As to keep them."));
+    else if (box.clickedButton() == restore)
         m_status->setText(tr("Unsaved changes restored. Save to keep them."));
 }
 
