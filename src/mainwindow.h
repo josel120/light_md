@@ -9,6 +9,7 @@
 #include <QTimer>
 #include <functional>
 #include <memory>
+#include <vector>
 
 class FindBar;
 class MarkdownEditor;
@@ -23,10 +24,28 @@ class QNetworkReply;
 class QPushButton;
 class QScrollBar;
 class QSplitter;
+class QStackedWidget;
+class QTabBar;
 class QTextBrowser;
 class ThemeManager;
 
-// The light_md window: buttons on top, writing pane on the left, preview on the right.
+// One open document: its own writing pane (with its undo history), file and recovery copy.
+struct DocumentTab
+{
+    MarkdownEditor *editor = nullptr;
+    MarkdownHighlighter *highlighter = nullptr;
+    QString filePath;
+    // Crash recovery: "<id>.md" / "<id>.json" hold the unsaved text, "<id>.lock" is held while open.
+    QString recoveryId;
+    std::unique_ptr<QLockFile> recoveryLock;
+    // Where the shared preview was when this tab was left, and which pane was leading.
+    double previewScroll = 0;
+    bool previewLeads = false;
+    // Set when the tab was reopened in the background; applied the first time it is shown.
+    double pendingEditorScroll = -1;
+};
+
+// The light_md window: buttons on top, tabs, writing pane on the left, preview on the right.
 class MainWindow : public QMainWindow
 {
     // tests/tst_session.cpp checks where documents are reopened.
@@ -34,6 +53,7 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(ThemeManager *themes, const QString &initialFile = QString());
+    // Opens `path` in a tab (switching to it if it is already open).
     bool loadFile(const QString &path);
 
 protected:
@@ -79,13 +99,14 @@ private:
     static QStringList recentFiles() { return QSettings().value(QStringLiteral("recentFiles")).toStringList(); }
     static void setRecentFiles(const QStringList &files) { QSettings().setValue(QStringLiteral("recentFiles"), files); }
     static QString cleanPath(const QString &path) { return QDir::cleanPath(QFileInfo(path).absoluteFilePath()); }
-    void rememberPosition();
+    void rememberPosition(DocumentTab *tab);
     void restorePosition(const QString &path);
+    void rememberOpenTabs();
     static QString recoveryFolder();
-    QString recoveryFile(const QString &extension) const;
-    void startRecovery();
-    bool writeRecovery();
-    void clearRecovery();
+    static QString recoveryFile(const QString &id, const QString &extension);
+    void startRecovery(DocumentTab *tab);
+    bool writeRecovery(DocumentTab *tab);
+    void clearRecovery(DocumentTab *tab);
     void offerRecovery();
     static void addRecentFile(const QString &path);
     void rebuildRecentMenu();
@@ -100,6 +121,7 @@ private:
     // New, open, save, export and print.
     bool askSaveIfModified();
     void newDocument();
+    bool closeTab(int index);
     void openDocument();
     bool writeTo(const QString &path);
     bool saveDocument();
@@ -115,8 +137,21 @@ private:
     QHBoxLayout *m_fileBarLayout = nullptr;
     QHBoxLayout *m_formatBarLayout = nullptr;
     QSplitter *m_splitter = nullptr;
+    // Tabs (tabs.cpp). m_editor and m_filePath always belong to the current tab.
+    DocumentTab *addTab();
+    void switchToTab(int index);
+    DocumentTab *currentTab() const;
+    DocumentTab *tabAt(int index) const;
+    int indexOf(const DocumentTab *tab) const;
+    int indexOfFile(const QString &path) const;
+    void updateTabText(DocumentTab *tab);
+    // An untitled tab nobody typed in (the welcome text, or a fresh New): opening a file replaces it.
+    bool isSpare(const DocumentTab *tab) const;
+
+    QTabBar *m_tabBar = nullptr;
+    QStackedWidget *m_editors = nullptr;
+    std::vector<std::unique_ptr<DocumentTab>> m_tabs;
     MarkdownEditor *m_editor = nullptr;
-    MarkdownHighlighter *m_highlighter = nullptr;
     QTextBrowser *m_preview = nullptr;
     QLabel *m_status = nullptr;
     QAction *m_editAction = nullptr;
@@ -130,8 +165,8 @@ private:
     QTimer m_previewTimer;
     QTimer m_statusTimer;
     QTimer m_autosaveTimer;
-    QString m_recoveryId;
-    std::unique_ptr<QLockFile> m_recoveryLock;
+    QAction *m_undoAction = nullptr;
+    QAction *m_redoAction = nullptr;
     QString m_filePath;
     bool m_editMode = true;
     bool m_showButtons = true;

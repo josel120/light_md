@@ -18,6 +18,7 @@ Un éditeur Markdown léger en C++ et Qt 6, ouvert à tous les utilisateurs.
 - Des boutons aux mots simples : New (nouveau), Open (ouvrir), Save (enregistrer), Big title (grand titre), Bold (gras), Bullet list (liste à puces), Quote (citation), Link (lien), etc.
 - Ouvre et enregistre des documents `.md`, y compris par glisser-déposer sur la fenêtre ou via « Ouvrir avec » dans l'Explorateur de fichiers.
 - Rechercher et remplacer des mots (Ctrl+F, Ctrl+H), et rouvrir vos derniers documents depuis le menu Recent (récents).
+- Plusieurs documents ouverts dans des onglets (Ctrl+N nouvel onglet, Ctrl+W fermer, Ctrl+Tab / Ctrl+Shift+Tab pour changer), chacun avec son propre historique d'annulation. light_md rouvre vos onglets au prochain démarrage.
 - Listes de tâches (Checklist) et un menu Insert (insérer) pour les images, tableaux, blocs de code et lignes de séparation. Les images placées à côté du document s'affichent dans l'aperçu et dans le PDF.
 - Collez une capture d'écran ou n'importe quelle image avec Ctrl+V : elle est enregistrée dans un dossier `images` à côté du document et apparaît dans l'aperçu et dans le PDF.
 - Export en PDF et impression : le résultat est identique au volet de droite.

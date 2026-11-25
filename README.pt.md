@@ -18,6 +18,7 @@ Escreva à esquerda e veja o resultado formatado à direita, na hora. Nunca usou
 - Botões com palavras simples: New (novo), Open (abrir), Save (salvar), Big title (título grande), Bold (negrito), Bullet list (lista com marcadores), Quote (citação), Link etc.
 - Abre e salva documentos `.md`, inclusive arrastando-os para a janela ou usando "Abrir com" no Explorador de Arquivos.
 - Localizar e substituir palavras (Ctrl+F, Ctrl+H) e reabrir seus últimos documentos pelo menu Recent (recentes).
+- Vários documentos abertos em abas (Ctrl+N nova, Ctrl+W fechar, Ctrl+Tab / Ctrl+Shift+Tab para trocar), cada um com seu próprio desfazer. O light_md reabre suas abas na próxima vez que você o iniciar.
 - Listas de tarefas (Checklist) e um menu Insert (inserir) para imagens, tabelas, blocos de código e linhas separadoras. As imagens ao lado do documento aparecem na pré-visualização e no PDF.
 - Cole uma captura de tela ou qualquer imagem com Ctrl+V: ela é salva numa pasta `images` ao lado do documento e aparece na pré-visualização e no PDF.
 - Exporta para PDF e imprime: o resultado fica igual ao painel da direita.

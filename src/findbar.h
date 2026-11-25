@@ -20,6 +20,9 @@ public:
     // Called when a match moved the writing pane.
     std::function<void()> matchFound;
 
+    // The writing pane to search (the current tab's).
+    void setEditor(QPlainTextEdit *editor) { m_editor = editor; }
+
     void openFind() { open(m_findEdit); }
     void openReplace() { open(m_replaceEdit); }
     // Hides the bar and gives the writing pane its focus back.

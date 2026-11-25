@@ -13,7 +13,7 @@ Order agreed on 2026-11-25, one at a time, one pull request each:
 2. [x] Paste pictures from the clipboard (#12)
 3. [x] Split `src/main.cpp` into smaller files (#19)
 4. [x] Automated tests for the formatting functions (#20)
-5. [ ] Tabs to keep several documents open (#13)
+5. [x] Tabs to keep several documents open (#13)
 6. [ ] Export to HTML (#14)
 7. [ ] Interface in Spanish, Portuguese, French and German (#15)
 8. [ ] Spell checker (#16)
@@ -66,6 +66,7 @@ Need a person: testing on a real Mac (#22), signing with an Apple Developer ID (
 - [x] Paste pictures from the clipboard (Ctrl+V): saved as PNG in an `images` folder next to the document; an unsaved document is saved first ([#12](https://github.com/josel120/light_md/issues/12))
 - [x] `src/main.cpp` split into smaller files: window, formatting, find bar, session and updates ([#19](https://github.com/josel120/light_md/issues/19))
 - [x] Unit tests (Qt Test) for formatting, find and replace, syntax highlighting and reopening where you left off, run by CI on every push ([#20](https://github.com/josel120/light_md/issues/20))
+- [x] Tabs: several documents open at once, each with its own undo history, unsaved marker and scroll position; the tabs come back on the next start, and crash recovery restores every tab ([#13](https://github.com/josel120/light_md/issues/13))
 
 ## Next
 
@@ -73,7 +74,6 @@ Nothing queued; the items below are being worked through in the order listed und
 
 ## Later
 
-- [ ] Tabs to keep several documents open ([#13](https://github.com/josel120/light_md/issues/13))
 - [ ] Export to HTML (and maybe `.docx`) ([#14](https://github.com/josel120/light_md/issues/14))
 - [ ] Interface in Spanish, Portuguese, French and German (`QTranslator`) ([#15](https://github.com/josel120/light_md/issues/15))
 - [ ] Spell checker (Hunspell) ([#16](https://github.com/josel120/light_md/issues/16))

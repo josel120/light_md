@@ -38,6 +38,8 @@
 #include <QSettings>
 #include <QSignalBlocker>
 #include <QSplitter>
+#include <QStackedWidget>
+#include <QTabBar>
 #include <QTextBrowser>
 #include <QTextDocument>
 #include <QTimer>
@@ -64,28 +66,33 @@ MainWindow::MainWindow(ThemeManager *themes, const QString &initialFile)
     m_formatBarLayout->setContentsMargins(0, 0, 0, 0);
     root->addWidget(m_formatBar);
 
+    // One tab per open document; hidden while there is only one.
+    m_tabBar = new QTabBar(central);
+    m_tabBar->setDocumentMode(true);
+    m_tabBar->setTabsClosable(true);
+    m_tabBar->setMovable(true);
+    m_tabBar->setExpanding(false);
+    m_tabBar->setAutoHide(true);
+    m_tabBar->setElideMode(Qt::ElideMiddle);
+    m_tabBar->setFocusPolicy(Qt::NoFocus);
+    root->addWidget(m_tabBar);
+
     m_splitter = new QSplitter(Qt::Horizontal, central);
-    m_editor = new MarkdownEditor(m_splitter);
-    m_editor->pasteImage = [this](const QImage &image) { pasteImage(image); };
-    m_editor->setPlaceholderText(QStringLiteral("Type your text here..."));
-    m_editor->setUndoRedoEnabled(true);
-    m_editor->viewport()->installEventFilter(this);
-    // Watched for palette changes, so the highlighting follows every theme switch.
-    m_editor->installEventFilter(this);
-    m_highlighter = new MarkdownHighlighter(m_editor->document());
+    // The writing panes of all tabs; only the current one shows.
+    m_editors = new QStackedWidget(m_splitter);
     m_preview = new QTextBrowser(m_splitter);
     m_preview->setOpenExternalLinks(true);
     // Base sizes; the user's bigger/smaller text setting is added on top (see applyTextSize).
     m_previewBaseSize = m_preview->font().pointSizeF() + 2;
-    m_editorBaseSize = m_editor->font().pointSizeF() + 1;
+    m_editorBaseSize = MarkdownEditor().font().pointSizeF() + 1;
     m_preview->viewport()->installEventFilter(this);
-    m_splitter->addWidget(m_editor);
+    m_splitter->addWidget(m_editors);
     m_splitter->addWidget(m_preview);
     m_splitter->setStretchFactor(0, 1);
     m_splitter->setStretchFactor(1, 1);
     m_splitter->setSizes({550, 550});
     root->addWidget(m_splitter, 1);
-    m_findBar = new FindBar(m_editor, central);
+    m_findBar = new FindBar(nullptr, central);
     // Matches are selected in the writing pane, so it has to be visible.
     m_findBar->beforeSearch = [this] {
         if (!m_editMode)
@@ -116,39 +123,29 @@ MainWindow::MainWindow(ThemeManager *themes, const QString &initialFile)
     // A few seconds after a change, keep a recovery copy in case the app or the computer crashes.
     m_autosaveTimer.setSingleShot(true);
     m_autosaveTimer.setInterval(5000);
-    connect(&m_autosaveTimer, &QTimer::timeout, this, [this] { writeRecovery(); });
-    startRecovery();
-
-    connect(m_editor, &QPlainTextEdit::textChanged, this, [this] {
-        // Any edit (typed, pasted or from a button) puts the writing pane in charge of scrolling.
-        m_previewLeads = false;
-        m_previewTimer.start();
-        // Not restarted on every key, so a long typing session still gets a recovery copy.
-        if (!m_autosaveTimer.isActive())
-            m_autosaveTimer.start();
-        m_statusTimer.start();
-    });
-    connect(m_editor->document(), &QTextDocument::modificationChanged, this, [this](bool changed) {
-        setWindowModified(changed);
-        updateStatus();
-        // Back to the saved text (for example with Undo): a crash now must not offer undone edits.
-        if (!changed)
-            clearRecovery();
+    connect(&m_autosaveTimer, &QTimer::timeout, this, [this] {
+        for (const auto &tab : m_tabs)
+            writeRecovery(tab.get());
     });
 
-    // Scrolling either pane moves the other to the same place, proportionally.
-    QScrollBar *editorBar = m_editor->verticalScrollBar();
+    // Scrolling either pane moves the other to the same place, proportionally (the writing
+    // pane's side is connected for each tab, in addTab).
     QScrollBar *previewBar = m_preview->verticalScrollBar();
-    connect(editorBar, &QScrollBar::valueChanged, this, [this, editorBar, previewBar] {
-        syncScroll(editorBar, previewBar);
+    connect(previewBar, &QScrollBar::valueChanged, this, [this, previewBar] {
+        if (m_editor)
+            syncScroll(previewBar, m_editor->verticalScrollBar());
     });
-    connect(previewBar, &QScrollBar::valueChanged, this, [this, editorBar, previewBar] {
-        syncScroll(previewBar, editorBar);
-    });
-    // Either pane's height changes after a re-render, a resize or a new text size; realign the
+    // The preview's height changes after a re-render, a resize or a new text size; realign the
     // other pane to whichever one the user is working in.
     connect(previewBar, &QScrollBar::rangeChanged, this, [this] { syncFromLeader(); });
-    connect(editorBar, &QScrollBar::rangeChanged, this, [this] { syncFromLeader(); });
+
+    connect(m_tabBar, &QTabBar::currentChanged, this, [this](int index) { switchToTab(index); });
+    connect(m_tabBar, &QTabBar::tabCloseRequested, this, [this](int index) { closeTab(index); });
+    connect(m_tabBar, &QTabBar::tabMoved, this, [this](int from, int to) {
+        auto tab = std::move(m_tabs[from]);
+        m_tabs.erase(m_tabs.begin() + from);
+        m_tabs.insert(m_tabs.begin() + to, std::move(tab));
+    });
 
     QSettings settings;
     const QByteArray geometry = settings.value(QStringLiteral("geometry")).toByteArray();
@@ -163,29 +160,33 @@ MainWindow::MainWindow(ThemeManager *themes, const QString &initialFile)
     m_textSize = qBound(kMinTextSize, settings.value(QStringLiteral("ui/textSize"), 0).toInt(), kMaxTextSize);
     applyTextSize();
 
-    // A file given on the command line wins; otherwise pick up the document open last time.
-    QString startFile = initialFile;
-    if (startFile.isEmpty()) {
-        const QString last = settings.value(QStringLiteral("session/lastFile")).toString();
-        if (!last.isEmpty() && QFileInfo::exists(last))
-            startFile = last;
-    }
+    // Start with the welcome text; the first document opened below takes its place.
+    switchToTab(indexOf(addTab()));
+    m_editor->setPlainText(QStringLiteral(
+        "# Welcome to light_md\n\n"
+        "Write on the **left** and see the result on the *right*.\n\n"
+        "## Getting started\n\n"
+        "- Use the buttons at the top to format your text\n"
+        "- Hide the buttons anytime with **Options → Show buttons** (Ctrl+Shift+B)\n"
+        "- **Ctrl+E** toggles the writing pane; **Ctrl+R** or **Esc** is Read only\n"
+        "- **Ctrl+N** opens a new tab; every action also lives under **Options** with a shortcut\n"));
+    m_editor->document()->setModified(false);
+    updatePreview();
 
-    if (!startFile.isEmpty() && loadFile(startFile)) {
-        // Loaded; loadFile already restored where the user left off.
-    } else {
-        m_editor->setPlainText(QStringLiteral(
-            "# Welcome to light_md\n\n"
-            "Write on the **left** and see the result on the *right*.\n\n"
-            "## Getting started\n\n"
-            "- Use the buttons at the top to format your text\n"
-            "- Hide the buttons anytime with **Options → Show buttons** (Ctrl+Shift+B)\n"
-            "- **Ctrl+E** toggles the writing pane; **Ctrl+R** or **Esc** is Read only\n"
-            "- Every action also lives under **Options** with a shortcut\n"));
-        m_editor->document()->setModified(false);
-        updateTitle();
-        updatePreview();
+    // Reopen the tabs that were open last time, then a file given on the command line (or by
+    // "Open with"), which becomes the current tab.
+    const QString lastFile = settings.value(QStringLiteral("session/lastFile")).toString();
+    QStringList openFiles = settings.value(QStringLiteral("session/openFiles")).toStringList();
+    if (openFiles.isEmpty() && !lastFile.isEmpty())
+        openFiles.append(lastFile);
+    for (const QString &file : openFiles) {
+        if (QFileInfo::exists(file))
+            loadFile(file);
     }
+    if (const int last = indexOfFile(lastFile); last >= 0)
+        switchToTab(last);
+    if (!initialFile.isEmpty())
+        loadFile(initialFile);
 
     // Apply after load so a failed open still gets remembered chrome.
     setShowButtons(showButtons);
@@ -197,16 +198,21 @@ MainWindow::MainWindow(ThemeManager *themes, const QString &initialFile)
 
 bool MainWindow::loadFile(const QString &path)
 {
+    if (const int open = indexOfFile(path); open >= 0) {
+        switchToTab(open);
+        return true;
+    }
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QMessageBox::warning(this, QStringLiteral("Could not open"),
                              QStringLiteral("Could not read the file:\n%1").arg(path));
         return false;
     }
-    rememberPosition();
+    if (!isSpare(currentTab()))
+        switchToTab(indexOf(addTab()));
     m_editor->setPlainText(QString::fromUtf8(file.readAll()));
     m_editor->document()->setModified(false);
-    clearRecovery();
+    clearRecovery(currentTab());
     setFilePath(path);
     addRecentFile(path);
     m_preview->verticalScrollBar()->setValue(0);
@@ -218,20 +224,26 @@ bool MainWindow::loadFile(const QString &path)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    if (!askSaveIfModified()) {
-        event->ignore();
-        return;
+    // Every tab with unsaved changes gets asked, in turn, in front.
+    DocumentTab *current = currentTab();
+    for (int i = 0; i < int(m_tabs.size()); ++i) {
+        if (!m_tabs[i]->editor->document()->isModified())
+            continue;
+        switchToTab(i);
+        if (!askSaveIfModified()) {
+            event->ignore();
+            return;
+        }
     }
-    rememberPosition();
-    QSettings settings;
-    settings.setValue(QStringLiteral("geometry"), saveGeometry());
-    // An unsaved new document has nothing to reopen, so the next start shows the welcome text.
-    if (m_filePath.isEmpty())
-        settings.remove(QStringLiteral("session/lastFile"));
-    else
-        settings.setValue(QStringLiteral("session/lastFile"), cleanPath(m_filePath));
+    // Back to the tab the user was in, so that is the one reopened in front next time.
+    switchToTab(indexOf(current));
+    for (const auto &tab : m_tabs)
+        rememberPosition(tab.get());
+    rememberOpenTabs();
+    QSettings().setValue(QStringLiteral("geometry"), saveGeometry());
     // A normal close (saved, or "Don't save") leaves nothing to recover.
-    clearRecovery();
+    for (const auto &tab : m_tabs)
+        clearRecovery(tab.get());
     event->accept();
 }
 
@@ -266,8 +278,7 @@ void MainWindow::dropEvent(QDropEvent *event)
     if (path.isEmpty())
         return;
     event->acceptProposedAction();
-    if (askSaveIfModified())
-        loadFile(path);
+    loadFile(path);
 }
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
@@ -275,10 +286,13 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
     // On macOS, documents opened from Finder arrive as an event instead of a command-line argument.
     if (event->type() == QEvent::FileOpen) {
         const QString path = static_cast<QFileOpenEvent *>(event)->file();
-        if (!path.isEmpty() && askSaveIfModified())
+        if (!path.isEmpty())
             loadFile(path);
         return true;
     }
+    // Before the first tab exists, nothing below applies.
+    if (!m_editor)
+        return QMainWindow::eventFilter(watched, event);
     // Remember which pane the user last scrolled, clicked or typed in. Only that pane drives the
     // other one, so the preview moving by itself (after a refresh or a resize) never drags the editor.
     if (event->type() == QEvent::Wheel || event->type() == QEvent::MouseButtonPress
@@ -367,7 +381,7 @@ void MainWindow::buildMenus()
 {
     auto *options = menuBar()->addMenu(QStringLiteral("&Options"));
 
-    auto *actNew = addOption(options, QStringLiteral("&New"), QStringLiteral("Start a blank document"),
+    auto *actNew = addOption(options, QStringLiteral("&New"), QStringLiteral("Start a blank document in a new tab"),
                              QKeySequence::New);
     auto *actOpen = addOption(options, QStringLiteral("&Open..."), QStringLiteral("Open a saved document"),
                               QKeySequence::Open);
@@ -379,6 +393,13 @@ void MainWindow::buildMenus()
     auto *actSaveAs = addOption(options, QStringLiteral("Save &as..."),
                                 QStringLiteral("Save a copy with a different name"),
                                 QKeySequence::SaveAs);
+    auto *actCloseTab = addOption(options, QStringLiteral("&Close tab"), QStringLiteral("Close this document"),
+                                  QKeySequence(QStringLiteral("Ctrl+W")));
+    auto *actNextTab = addOption(options, QStringLiteral("Next ta&b"), QStringLiteral("Go to the next open document"),
+                                 QKeySequence(QStringLiteral("Ctrl+Tab")));
+    auto *actPreviousTab = addOption(options, QStringLiteral("Previous tab"),
+                                     QStringLiteral("Go to the previous open document"),
+                                     QKeySequence(QStringLiteral("Ctrl+Shift+Tab")));
     options->addSeparator();
     auto *actPdf = addOption(options, QStringLiteral("Export to &PDF..."),
                              QStringLiteral("Create a nicely formatted PDF to send or share"),
@@ -552,6 +573,13 @@ void MainWindow::buildMenus()
     m_formatBarLayout->addStretch();
 
     connect(actNew, &QAction::triggered, this, [this] { newDocument(); });
+    connect(actCloseTab, &QAction::triggered, this, [this] { closeTab(indexOf(currentTab())); });
+    connect(actNextTab, &QAction::triggered, this, [this] {
+        m_tabBar->setCurrentIndex((m_tabBar->currentIndex() + 1) % m_tabBar->count());
+    });
+    connect(actPreviousTab, &QAction::triggered, this, [this] {
+        m_tabBar->setCurrentIndex((m_tabBar->currentIndex() + m_tabBar->count() - 1) % m_tabBar->count());
+    });
     connect(actOpen, &QAction::triggered, this, [this] { openDocument(); });
     connect(actSave, &QAction::triggered, this, [this] { saveDocument(); });
     connect(actSaveAs, &QAction::triggered, this, [this] { saveDocumentAs(); });
@@ -568,10 +596,11 @@ void MainWindow::buildMenus()
         syncFromLeader();
     });
 
-    connect(actUndo, &QAction::triggered, m_editor, &QPlainTextEdit::undo);
-    connect(actRedo, &QAction::triggered, m_editor, &QPlainTextEdit::redo);
-    connect(m_editor, &QPlainTextEdit::undoAvailable, actUndo, &QAction::setEnabled);
-    connect(m_editor, &QPlainTextEdit::redoAvailable, actRedo, &QAction::setEnabled);
+    // Each tab has its own history; addTab and switchToTab keep these two up to date.
+    m_undoAction = actUndo;
+    m_redoAction = actRedo;
+    connect(actUndo, &QAction::triggered, this, [this] { m_editor->undo(); });
+    connect(actRedo, &QAction::triggered, this, [this] { m_editor->redo(); });
     actUndo->setEnabled(false);
     actRedo->setEnabled(false);
 
@@ -645,7 +674,7 @@ void MainWindow::setEditMode(bool editing)
     if (fromReader)
         m_previewLeads = true;
     m_editMode = editing;
-    m_editor->setVisible(editing);
+    m_editors->setVisible(editing);
     if (m_formatMenu)
         m_formatMenu->setEnabled(editing);
     if (m_formatBar)
@@ -689,9 +718,11 @@ void MainWindow::changeTextSize(int steps)
 // Each step is one point on top of the base size; titles in the preview grow with it.
 void MainWindow::applyTextSize()
 {
-    QFont writeFont = m_editor->font();
-    writeFont.setPointSizeF(m_editorBaseSize + m_textSize);
-    m_editor->setFont(writeFont);
+    for (const auto &tab : m_tabs) {
+        QFont writeFont = tab->editor->font();
+        writeFont.setPointSizeF(m_editorBaseSize + m_textSize);
+        tab->editor->setFont(writeFont);
+    }
     QFont readFont = m_preview->font();
     readFont.setPointSizeF(m_previewBaseSize + m_textSize);
     m_preview->setFont(readFont);
@@ -701,7 +732,8 @@ void MainWindow::applyTextSize()
 
 void MainWindow::updateHighlighter()
 {
-    m_highlighter->setStyle(m_editor->palette(), m_editorBaseSize + m_textSize);
+    for (const auto &tab : m_tabs)
+        tab->highlighter->setStyle(tab->editor->palette(), m_editorBaseSize + m_textSize);
 }
 
 QString MainWindow::droppedFile(const QMimeData *mime)
@@ -731,7 +763,7 @@ void MainWindow::setScrollRatio(QScrollBar *bar, double ratio)
 // only from the pane the user is working in (see m_previewLeads).
 void MainWindow::syncScroll(QScrollBar *from, QScrollBar *to)
 {
-    if (!m_syncScroll || m_syncingScroll || !m_editor->isVisible())
+    if (!m_syncScroll || m_syncingScroll || !m_editor || !m_editor->isVisible())
         return;
     if ((from == m_preview->verticalScrollBar()) != m_previewLeads)
         return;
@@ -743,6 +775,8 @@ void MainWindow::syncScroll(QScrollBar *from, QScrollBar *to)
 
 void MainWindow::syncFromLeader()
 {
+    if (!m_editor)
+        return;
     QScrollBar *editorBar = m_editor->verticalScrollBar();
     QScrollBar *previewBar = m_preview->verticalScrollBar();
     if (m_previewLeads)
@@ -753,6 +787,8 @@ void MainWindow::syncFromLeader()
 
 void MainWindow::updatePreview()
 {
+    if (!m_editor)
+        return;
     // Keep the reading position; otherwise the pane jumps to the top on every keystroke.
     QScrollBar *bar = m_preview->verticalScrollBar();
     const int scroll = bar->value();
@@ -763,6 +799,8 @@ void MainWindow::updatePreview()
 
 void MainWindow::updateStatus()
 {
+    if (!m_editor)
+        return;
     static const QRegularExpression spaces(QStringLiteral("\\s+"));
     const int words = m_editor->toPlainText().split(spaces, Qt::SkipEmptyParts).size();
     const bool modified = m_editor->document()->isModified();
@@ -793,6 +831,10 @@ void MainWindow::setFilePath(const QString &path)
     // Always absolute: a file given as "notes.md" on the command line must still mean the same
     // file later, whatever folder light_md is started from (Save, Recent, crash recovery).
     m_filePath = path.isEmpty() ? QString() : cleanPath(path);
+    if (DocumentTab *tab = currentTab()) {
+        tab->filePath = m_filePath;
+        updateTabText(tab);
+    }
     // Pictures written as "photo.png" are looked up next to the document.
     m_preview->setSearchPaths(path.isEmpty() ? QStringList() : QStringList{QFileInfo(path).absolutePath()});
     if (!path.isEmpty())
@@ -940,27 +982,46 @@ bool MainWindow::askSaveIfModified()
 
 void MainWindow::newDocument()
 {
-    if (!askSaveIfModified())
-        return;
-    rememberPosition();
-    m_editor->clear();
-    m_editor->document()->setModified(false);
-    clearRecovery();
-    setFilePath(QString());
-    updatePreview();
+    switchToTab(indexOf(addTab()));
     setEditMode(true);
+}
+
+// Closes a tab, asking about its unsaved changes first. The last tab is never left empty-handed:
+// it becomes a blank document. Returns false when the user cancels.
+bool MainWindow::closeTab(int index)
+{
+    DocumentTab *tab = tabAt(index);
+    if (!tab)
+        return false;
+    if (tab->editor->document()->isModified()) {
+        switchToTab(index);
+        if (!askSaveIfModified())
+            return false;
+    }
+    rememberPosition(tab);
+    clearRecovery(tab);
+    if (m_tabs.size() == 1)
+        addTab();
+    if (tab->editor == m_editor)
+        m_editor = nullptr;
+    MarkdownEditor *editor = tab->editor;
+    // Out of the list before the tab bar picks the next current tab (see switchToTab).
+    m_tabs.erase(m_tabs.begin() + index);
+    m_tabBar->removeTab(index);
+    m_editors->removeWidget(editor);
+    editor->deleteLater();
+    if (!m_editor)
+        switchToTab(m_tabBar->currentIndex());
+    return true;
 }
 
 void MainWindow::openDocument()
 {
-    if (!askSaveIfModified())
-        return;
-    const QString path = QFileDialog::getOpenFileName(
+    const QStringList paths = QFileDialog::getOpenFileNames(
         this, QStringLiteral("Open document"), lastFolder(),
         QStringLiteral("Markdown documents (*.md *.markdown *.txt);;All files (*)"));
-    if (path.isEmpty())
-        return;
-    loadFile(path);
+    for (const QString &path : paths)
+        loadFile(path);
 }
 
 bool MainWindow::writeTo(const QString &path)
@@ -987,7 +1048,7 @@ bool MainWindow::writeTo(const QString &path)
         return false;
     }
     m_editor->document()->setModified(false);
-    clearRecovery();
+    clearRecovery(currentTab());
     setFilePath(path);
     addRecentFile(path);
     return true;
@@ -1082,6 +1143,9 @@ void MainWindow::showHelp()
             "Ctrl+Shift+L Separator line<br>"
             "Ctrl+V with a picture on the clipboard (a screenshot, say) saves it in an <i>images</i> folder "
             "next to the document and adds it</p>"
+            "<p><b>Tabs</b><br>"
+            "Ctrl+N New tab · Ctrl+W Close tab · Ctrl+Tab / Ctrl+Shift+Tab Next / previous tab. "
+            "Opening a document puts it in its own tab, and your tabs come back the next time.</p>"
             "<p><b>Find</b><br>"
             "Ctrl+F Find · Ctrl+H Replace · F3 / Shift+F3 Next / previous match · Esc closes the find bar</p>"
             "<p><b>Theme</b><br>"
