@@ -36,6 +36,7 @@ Links schreiben, rechts sofort das formatierte Ergebnis sehen. Neu bei Markdown?
 - Tastenkürzel: **Ctrl+Shift+B** Schaltflächen ein- oder ausblenden, **Ctrl+E** bearbeiten, **Ctrl+R** / **Esc** nur lesen; alles Weitere unter Options (Tabelle in [README.md](README.md)).
 - Eine Help-Schaltfläche (Hilfe) mit einer kurzen Anleitung.
 - Rechtschreibprüfung auf Englisch, Spanisch, Portugiesisch, Französisch und Deutsch: falsch geschriebene Wörter bekommen eine rote Wellenlinie, ein Rechtsklick schlägt Korrekturen vor oder nimmt das Wort in dein Wörterbuch auf. Code und Webadressen werden übersprungen. Sprache wählen oder ausschalten unter **Optionen → Rechtschreibung**.
+- **Gliederung** links: alle Überschriften und Unterüberschriften, verschachtelt. Ein Klick springt in beiden Bereichen dorthin; sie folgt dem Tippen und markiert den Abschnitt, in dem du bist. Ausblenden mit **Ctrl+Shift+O**.
 - **Ablenkungsfreier** Modus (**F11**): Vollbild nur mit deinem Text, in einer angenehmen Spalte in der Mitte. Esc oder F11 holt alles zurück.
 
 In [ROADMAP.md](ROADMAP.md) (auf Englisch) steht, was fertig ist und was als Nächstes kommt.

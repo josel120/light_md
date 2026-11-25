@@ -1,5 +1,6 @@
 #include "editor.h"
 #include "mainwindow.h"
+#include "outline.h"
 #include "theme.h"
 
 #include <QAction>
@@ -10,6 +11,7 @@
 #include <QLabel>
 #include <QMenuBar>
 #include <QTabBar>
+#include <QTextBlock>
 #include <QTextBrowser>
 #include <QMessageBox>
 #include <QPushButton>
@@ -384,6 +386,61 @@ private slots:
         window.setDistractionFree(false);
         QVERIFY(!window.m_editMode);
         QVERIFY(window.m_preview->isVisible());
+    }
+
+    void outlineJumpsToATitleInBothPanes()
+    {
+        QSettings().clear();
+        QString text;
+        for (int section = 1; section <= 4; ++section) {
+            text += QStringLiteral("# Section %1\n\n").arg(section);
+            for (int i = 0; i < 40; ++i)
+                text += QStringLiteral("Line %1 of section %2\n\n").arg(i).arg(section);
+        }
+        ThemeManager themes;
+        MainWindow window(&themes);
+        showWindow(window);
+        window.m_editor->setPlainText(text);
+        window.updatePreview();
+        QCOMPARE(window.m_outline->headings().size(), 4);
+        QVERIFY(window.m_outline->isVisible());
+
+        const int line = window.m_outline->headings().at(2).line;
+        window.goToHeading(2, line);
+        QCOMPARE(window.m_editor->textCursor().blockNumber(), line);
+        // The title is the first thing in the writing pane, and the preview went there too.
+        QCOMPARE(window.m_editor->cursorForPosition(QPoint(5, 5)).blockNumber(), line);
+        QVERIFY(window.m_preview->verticalScrollBar()->value() > 0);
+        const QTextBlock top = window.m_preview->cursorForPosition(QPoint(5, 5)).block();
+        QCOMPARE(top.text(), QStringLiteral("Section 3"));
+        QCOMPARE(window.m_outline->currentItem()->text(0), QStringLiteral("Section 3"));
+
+        // Typing a new title shows up in the outline.
+        QTextCursor cursor(window.m_editor->document());
+        cursor.insertText(QStringLiteral("# Intro\n\n"));
+        window.updatePreview();
+        QCOMPARE(window.m_outline->headings().size(), 5);
+    }
+
+    void outlineCanBeHiddenAndStaysHidden()
+    {
+        QSettings().clear();
+        ThemeManager themes;
+        {
+            MainWindow window(&themes);
+            showWindow(window);
+            QTest::keyClick(window.m_editor, Qt::Key_O, Qt::ControlModifier | Qt::ShiftModifier);
+            QVERIFY(!window.m_outline->isVisible());
+            // Distraction-free mode hides it and brings it back only if it was shown.
+            window.setDistractionFree(true);
+            window.setDistractionFree(false);
+            QVERIFY(!window.m_outline->isVisible());
+            window.close();
+        }
+        MainWindow window(&themes);
+        showWindow(window);
+        QVERIFY(!window.m_outline->isVisible());
+        QVERIFY(!window.m_outlineAction->isChecked());
     }
 
     void anotherSpellingFindsTheSameTab()

@@ -18,6 +18,7 @@ Write on the left, see the formatted result on the right. Format with the button
 
 - **Classic layout by default**: file and format button bars plus write + preview panes.
 - Toggle **Show buttons** (**Ctrl+Shift+B**) for a minimal Options-only chrome.
+- **Outline** panel on the left: every title and subtitle, nested. Click one to jump to it in both panes; it follows your typing and marks the section you are in. Hide it with **Ctrl+Shift+O**.
 - **Distraction-free** mode (**F11**): full screen with only your text, in a comfortable column in the middle. Esc or F11 brings everything back.
 - Optional **Reader** mode (**Ctrl+E** / **Ctrl+R** / **Esc**) hides the writing pane; independent of the button bars.
 - Button visibility and the last Edit/Reader view are remembered across restarts and when opening another file.
@@ -49,6 +50,7 @@ See [ROADMAP.md](ROADMAP.md) for what is done and what is coming next.
 | Edit document | Ctrl+E |
 | Read only | Ctrl+R or Esc |
 | Distraction-free (full screen, only the text) | F11 (Esc leaves) |
+| Show / hide the outline | Ctrl+Shift+O |
 | New tab / Open / Save / Save as | Ctrl+N / Ctrl+O / Ctrl+S / Ctrl+Shift+S |
 | Close tab / Next tab / Previous tab | Ctrl+W / Ctrl+Tab / Ctrl+Shift+Tab |
 | Export PDF / Print | Ctrl+Shift+E / Ctrl+P |

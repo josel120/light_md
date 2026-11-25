@@ -272,6 +272,14 @@ Escribe a la **izquierda** y mira el resultado a la *derecha*.
         <translation>Mostrar u ocultar las barras de botones</translation>
     </message>
     <message>
+        <source>Show &amp;outline</source>
+        <translation>Mostrar &amp;índice</translation>
+    </message>
+    <message>
+        <source>Show or hide the list of titles, to jump between them</source>
+        <translation>Mostrar u ocultar la lista de títulos, para saltar entre ellos</translation>
+    </message>
+    <message>
         <source>&amp;Distraction-free</source>
         <translation>Sin &amp;distracciones</translation>
     </message>
@@ -883,6 +891,17 @@ Se quitó de la lista.</translation>
     <message>
         <source>Add “%1” to the dictionary</source>
         <translation>Añadir «%1» al diccionario</translation>
+    </message>
+</context>
+<context>
+    <name>OutlinePanel</name>
+    <message>
+        <source>Outline</source>
+        <translation>Índice</translation>
+    </message>
+    <message>
+        <source>Click a title to go to it</source>
+        <translation>Haz clic en un título para ir a él</translation>
     </message>
 </context>
 <context>

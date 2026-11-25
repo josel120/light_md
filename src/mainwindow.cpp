@@ -5,10 +5,13 @@
 #include "findbar.h"
 #include "formatting.h"
 #include "highlighter.h"
+#include "outline.h"
 #include "spellcheck.h"
 #include "theme.h"
 
 #include <QAbstractButton>
+#include <QTextBlock>
+#include <QAbstractTextDocumentLayout>
 #include <QAction>
 #include <QBuffer>
 #include <QActionGroup>
@@ -84,7 +87,11 @@ MainWindow::MainWindow(ThemeManager *themes, const QString &initialFile)
     m_tabBar->setFocusPolicy(Qt::NoFocus);
     root->addWidget(m_tabBar);
 
-    m_splitter = new QSplitter(Qt::Horizontal, central);
+    m_outerSplitter = new QSplitter(Qt::Horizontal, central);
+    m_outline = new OutlinePanel(m_outerSplitter);
+    m_outline->setMinimumWidth(110);
+    m_outline->jump = [this](int index, int line) { goToHeading(index, line); };
+    m_splitter = new QSplitter(Qt::Horizontal, m_outerSplitter);
     // The writing panes of all tabs; only the current one shows.
     m_editors = new QStackedWidget(m_splitter);
     m_preview = new QTextBrowser(m_splitter);
@@ -98,7 +105,13 @@ MainWindow::MainWindow(ThemeManager *themes, const QString &initialFile)
     m_splitter->setStretchFactor(0, 1);
     m_splitter->setStretchFactor(1, 1);
     m_splitter->setSizes({550, 550});
-    root->addWidget(m_splitter, 1);
+    m_outerSplitter->addWidget(m_outline);
+    m_outerSplitter->addWidget(m_splitter);
+    m_outerSplitter->setStretchFactor(0, 0);
+    m_outerSplitter->setStretchFactor(1, 1);
+    m_outerSplitter->setCollapsible(1, false);
+    m_outerSplitter->setSizes({190, 1100});
+    root->addWidget(m_outerSplitter, 1);
     m_findBar = new FindBar(nullptr, central);
     // Matches are selected in the writing pane, so it has to be visible.
     m_findBar->beforeSearch = [this] {
@@ -162,6 +175,7 @@ MainWindow::MainWindow(ThemeManager *themes, const QString &initialFile)
     // Classic defaults on first run: buttons visible, two panes (edit mode).
     const bool showButtons = settings.value(QStringLiteral("ui/showButtons"), true).toBool();
     const bool editMode = settings.value(QStringLiteral("ui/editMode"), true).toBool();
+    const bool showOutline = settings.value(QStringLiteral("ui/showOutline"), true).toBool();
     m_syncScroll = settings.value(QStringLiteral("ui/syncScroll"), true).toBool();
     m_syncScrollAction->setChecked(m_syncScroll);
     m_textSize = qBound(kMinTextSize, settings.value(QStringLiteral("ui/textSize"), 0).toInt(), kMaxTextSize);
@@ -196,6 +210,7 @@ MainWindow::MainWindow(ThemeManager *themes, const QString &initialFile)
 
     // Apply after load so a failed open still gets remembered chrome.
     setShowButtons(showButtons);
+    setShowOutline(showOutline);
     setEditMode(editMode);
 
     // After the window is on screen: a big dictionary takes a moment to load.
@@ -460,6 +475,13 @@ void MainWindow::buildMenus()
                                     QKeySequence(QStringLiteral("Ctrl+Shift+B")));
     m_showButtonsAction->setCheckable(true);
     m_showButtonsAction->setChecked(true);
+
+    m_outlineAction = addOption(options, tr("Show &outline"),
+                                tr("Show or hide the list of titles, to jump between them"),
+                                QKeySequence(QStringLiteral("Ctrl+Shift+O")));
+    m_outlineAction->setCheckable(true);
+    m_outlineAction->setChecked(true);
+    connect(m_outlineAction, &QAction::triggered, this, [this](bool show) { setShowOutline(show); });
 
     m_distractionFreeAction = addOption(options, tr("&Distraction-free"),
                                         tr("Full screen with only your text; Esc leaves"),
@@ -795,6 +817,62 @@ void MainWindow::setEditMode(bool editing)
     updateStatus();
 }
 
+void MainWindow::setShowOutline(bool show)
+{
+    m_showOutline = show;
+    m_outline->setVisible(show && !m_distractionFree);
+    if (m_outlineAction && m_outlineAction->isChecked() != show) {
+        QSignalBlocker blocker(m_outlineAction);
+        m_outlineAction->setChecked(show);
+    }
+    QSettings().setValue(QStringLiteral("ui/showOutline"), show);
+}
+
+// Puts the title at the top of the writing pane (when it shows) and of the preview.
+void MainWindow::goToHeading(int index, int line)
+{
+    // The preview may be a moment behind the typing; catch it up so the titles match.
+    if (m_previewTimer.isActive()) {
+        m_previewTimer.stop();
+        updatePreview();
+    }
+    const QTextBlock block = m_editor->document()->findBlockByNumber(line);
+    if (!block.isValid())
+        return;
+    m_previewLeads = !m_editMode;
+    if (m_editMode) {
+        m_editor->setTextCursor(QTextCursor(block));
+        // Its pane scrolls by lines, wrapped lines included.
+        m_editor->verticalScrollBar()->setValue(block.firstLineNumber());
+        m_editor->setFocus(Qt::ShortcutFocusReason);
+    }
+
+    // The same title in the preview: the index-th one, unless the two disagree on how many
+    // titles there are (HTML, titles inside quotes...), then the first with the same text.
+    QList<QTextBlock> titles;
+    for (QTextBlock b = m_preview->document()->begin(); b.isValid(); b = b.next()) {
+        if (b.blockFormat().headingLevel() > 0)
+            titles.append(b);
+    }
+    QTextBlock target;
+    if (titles.size() == m_outline->headings().size() && index < titles.size()) {
+        target = titles.at(index);
+    } else {
+        const QString text = m_outline->headings().value(index).text;
+        for (const QTextBlock &title : std::as_const(titles)) {
+            if (title.text().simplified() == text) {
+                target = title;
+                break;
+            }
+        }
+    }
+    if (target.isValid()) {
+        const qreal top = m_preview->document()->documentLayout()->blockBoundingRect(target).top();
+        m_preview->verticalScrollBar()->setValue(int(top));
+    }
+    m_outline->setCurrentLine(line);
+}
+
 void MainWindow::setDistractionFree(bool on)
 {
     if (m_distractionFreeAction && m_distractionFreeAction->isChecked() != on) {
@@ -818,6 +896,7 @@ void MainWindow::setDistractionFree(bool on)
     if (on)
         m_tabBar->hide();
     m_preview->setVisible(!on);
+    m_outline->setVisible(!on && m_showOutline);
     m_status->setVisible(!on);
     menuBar()->setVisible(!on);
     if (on)
@@ -924,6 +1003,8 @@ void MainWindow::updatePreview()
     QScrollBar *bar = m_preview->verticalScrollBar();
     const int scroll = bar->value();
     m_preview->setMarkdown(Export::renderableMarkdown(m_editor->toPlainText()));
+    m_outline->setHeadings(Outline::headings(m_editor->toPlainText()));
+    m_outline->setCurrentLine(m_editor->textCursor().blockNumber());
     bar->setValue(scroll);
     syncFromLeader();
 }

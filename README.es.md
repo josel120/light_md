@@ -36,6 +36,7 @@ Escribe a la izquierda y ve el resultado formateado a la derecha, al instante. �
 - Atajos: **Ctrl+Shift+B** mostrar u ocultar los botones, **Ctrl+E** editar, **Ctrl+R** / **Esc** solo lectura; el resto está en Options (ver tabla en [README.md](README.md)).
 - Botón Help (ayuda) con una guía corta.
 - Corrector ortográfico en inglés, español, portugués, francés y alemán: las palabras mal escritas llevan una onda roja, y con clic derecho se ofrecen correcciones o se añade la palabra a tu diccionario. El código y las direcciones web no se revisan. Elige el idioma o apágalo en **Opciones → Ortografía**.
+- Panel de **índice** a la izquierda: todos los títulos y subtítulos, anidados. Haz clic en uno para saltar a él en los dos paneles; se actualiza mientras escribes y marca la sección en la que estás. Ocúltalo con **Ctrl+Shift+O**.
 - Modo **sin distracciones** (**F11**): pantalla completa solo con tu texto, en una columna cómoda en el centro. Esc o F11 lo devuelve todo.
 
 Consulta [ROADMAP.md](ROADMAP.md) (en inglés) para ver qué está hecho y qué viene después.

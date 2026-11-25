@@ -272,6 +272,14 @@ Write on the **left** and see the result on the *right*.
         <translation>Afficher ou masquer les barres de boutons</translation>
     </message>
     <message>
+        <source>Show &amp;outline</source>
+        <translation>Afficher le &amp;plan</translation>
+    </message>
+    <message>
+        <source>Show or hide the list of titles, to jump between them</source>
+        <translation>Afficher ou masquer la liste des titres, pour passer de l&apos;un à l&apos;autre</translation>
+    </message>
+    <message>
         <source>&amp;Distraction-free</source>
         <translation>Sans &amp;distraction</translation>
     </message>
@@ -883,6 +891,17 @@ Il a été retiré de la liste.</translation>
     <message>
         <source>Add “%1” to the dictionary</source>
         <translation>Ajouter « %1 » au dictionnaire</translation>
+    </message>
+</context>
+<context>
+    <name>OutlinePanel</name>
+    <message>
+        <source>Outline</source>
+        <translation>Plan</translation>
+    </message>
+    <message>
+        <source>Click a title to go to it</source>
+        <translation>Cliquez sur un titre pour y aller</translation>
     </message>
 </context>
 <context>

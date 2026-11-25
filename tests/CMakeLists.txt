@@ -1,7 +1,7 @@
 find_package(Qt6 REQUIRED COMPONENTS Test)
 
 # One executable per area; "ctest --test-dir build --output-on-failure" runs them all.
-foreach(name export findbar formatting highlighter session spellcheck)
+foreach(name export findbar formatting highlighter outline session spellcheck)
     qt_add_executable(tst_${name} tst_${name}.cpp)
     target_link_libraries(tst_${name} PRIVATE light_md_core Qt6::Test)
     add_test(NAME ${name} COMMAND tst_${name})
