@@ -19,6 +19,7 @@ Links schreiben, rechts sofort das formatierte Ergebnis sehen. Neu bei Markdown?
 - Öffnet und speichert `.md`-Dokumente, auch per Drag-and-drop ins Fenster oder über „Öffnen mit“ im Datei-Explorer.
 - Wörter suchen und ersetzen (Strg+F, Strg+H) und die letzten Dokumente über das Menü Recent (zuletzt verwendet) wieder öffnen.
 - Checklisten sowie ein Insert-Menü (einfügen) für Bilder, Tabellen, Codeblöcke und Trennlinien. Bilder neben dem Dokument erscheinen in der Vorschau und im PDF.
+- Bildschirmfotos und andere Bilder mit Strg+V einfügen: Sie werden in einem Ordner `images` neben dem Dokument gespeichert und erscheinen in der Vorschau und im PDF.
 - Export als PDF und Drucken: Das Ergebnis sieht genauso aus wie der rechte Bereich.
 - Rückgängig und Wiederholen sowie Tastenkürzel (Strg+S, Strg+Z, Strg+B, Strg+I, Strg+K, Strg+1, Strg+2).
 - Öffnet beim Start das zuletzt geöffnete Dokument genau an der Stelle, an der du aufgehört hast (Cursor und Bildlauf), und merkt sich diese Stelle für jedes zuletzt verwendete Dokument.

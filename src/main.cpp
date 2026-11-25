@@ -1,3 +1,4 @@
+#include "editor.h"
 #include "highlighter.h"
 #include "theme.h"
 
@@ -83,7 +84,8 @@ public:
         root->addWidget(m_formatBar);
 
         m_splitter = new QSplitter(Qt::Horizontal, central);
-        m_editor = new QPlainTextEdit(m_splitter);
+        m_editor = new MarkdownEditor(m_splitter);
+        m_editor->pasteImage = [this](const QImage &image) { pasteImage(image); };
         m_editor->setPlaceholderText(QStringLiteral("Type your text here..."));
         m_editor->setUndoRedoEnabled(true);
         m_editor->viewport()->installEventFilter(this);
@@ -1045,6 +1047,41 @@ private:
         insertBlock(QStringLiteral("![%1](%2)").arg(description, target), description);
     }
 
+    // A picture pasted from the clipboard (a screenshot, say) is saved as a PNG in an "images"
+    // folder next to the document, and a link to it goes where the cursor is.
+    void pasteImage(const QImage &image)
+    {
+        if (m_filePath.isEmpty()) {
+            const auto answer = QMessageBox::question(
+                this, QStringLiteral("Save the document first"),
+                QStringLiteral("Pasted pictures are kept in a folder next to the document, "
+                               "so the document needs to be saved first.\n\nSave it now?"),
+                QMessageBox::Save | QMessageBox::Cancel, QMessageBox::Save);
+            if (answer != QMessageBox::Save || !saveDocumentAs()) {
+                m_editor->setFocus();
+                return;
+            }
+        }
+        const QDir folder = QFileInfo(m_filePath).absoluteDir();
+        const QString subfolder = QStringLiteral("images");
+        const QString stamp = QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss"));
+        QString name = QStringLiteral("picture-%1.png").arg(stamp);
+        for (int n = 2; QFileInfo::exists(folder.filePath(subfolder + QLatin1Char('/') + name)); ++n)
+            name = QStringLiteral("picture-%1-%2.png").arg(stamp).arg(n);
+        const QString relative = subfolder + QLatin1Char('/') + name;
+        if (!folder.mkpath(subfolder) || !image.save(folder.filePath(relative), "PNG")) {
+            QMessageBox::warning(this, QStringLiteral("Could not paste the picture"),
+                                 QStringLiteral("Could not save the picture in:\n%1")
+                                     .arg(QDir::toNativeSeparators(folder.filePath(subfolder))));
+            return;
+        }
+        if (!m_editMode)
+            setEditMode(true);
+        m_editor->textCursor().insertText(QStringLiteral("![](%1)").arg(relative));
+        m_editor->setFocus();
+        m_status->setText(QStringLiteral("Picture saved as %1").arg(QDir::toNativeSeparators(relative)));
+    }
+
     void showFindBar(QLineEdit *focusField)
     {
         // Matches are selected in the writing pane, so it has to be visible.
@@ -1668,7 +1705,9 @@ private:
                 "Ctrl+Shift+. Quote</p>"
                 "<p><b>Insert</b> (button or Options → Format → Insert)<br>"
                 "Ctrl+Shift+P Picture · Ctrl+Shift+T Table · Ctrl+Shift+C Code block · "
-                "Ctrl+Shift+L Separator line</p>"
+                "Ctrl+Shift+L Separator line<br>"
+                "Ctrl+V with a picture on the clipboard (a screenshot, say) saves it in an <i>images</i> folder "
+                "next to the document and adds it</p>"
                 "<p><b>Find</b><br>"
                 "Ctrl+F Find · Ctrl+H Replace · F3 / Shift+F3 Next / previous match · Esc closes the find bar</p>"
                 "<p><b>Theme</b><br>"
@@ -1692,7 +1731,7 @@ private:
     QHBoxLayout *m_fileBarLayout = nullptr;
     QHBoxLayout *m_formatBarLayout = nullptr;
     QSplitter *m_splitter = nullptr;
-    QPlainTextEdit *m_editor = nullptr;
+    MarkdownEditor *m_editor = nullptr;
     MarkdownHighlighter *m_highlighter = nullptr;
     QTextBrowser *m_preview = nullptr;
     QLabel *m_status = nullptr;

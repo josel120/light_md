@@ -10,7 +10,7 @@ Each open item links to its GitHub issue; write "Closes #N" in a pull request to
 Order agreed on 2026-11-25, one at a time, one pull request each:
 
 1. [x] Syntax highlighting in the editor (#11)
-2. [ ] Paste pictures from the clipboard (#12)
+2. [x] Paste pictures from the clipboard (#12)
 3. [ ] Split `src/main.cpp` into smaller files (#19)
 4. [ ] Automated tests for the formatting functions (#20)
 5. [ ] Tabs to keep several documents open (#13)
@@ -63,10 +63,11 @@ Need a person: testing on a real Mac (#22), signing with an Apple Developer ID (
 ### Version 1.5 (in progress)
 - [x] Autosave and recovery after a crash: a copy of unsaved changes is kept every few seconds, and offered back after a crash ([#10](https://github.com/josel120/light_md/issues/10))
 - [x] Syntax highlighting in the editor: bigger titles, bold, italic, links, code, lists, checklists and dimmed quotes, in the colors of the current theme ([#11](https://github.com/josel120/light_md/issues/11))
+- [x] Paste pictures from the clipboard (Ctrl+V): saved as PNG in an `images` folder next to the document; an unsaved document is saved first ([#12](https://github.com/josel120/light_md/issues/12))
 
 ## Next
 
-- [ ] Paste pictures from the clipboard (saved next to the document) ([#12](https://github.com/josel120/light_md/issues/12))
+Nothing queued; the items below are being worked through in the order listed under **In progress**.
 
 ## Later
 
