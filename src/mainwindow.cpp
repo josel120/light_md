@@ -249,6 +249,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
     // Back to the tab the user was in, so that is the one reopened in front next time.
     switchToTab(indexOf(current));
+    // The normal window size is the one to remember, not full screen.
+    setDistractionFree(false);
     for (const auto &tab : m_tabs)
         rememberPosition(tab.get());
     rememberOpenTabs();
@@ -261,10 +263,15 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
-    // Esc first closes the find bar; otherwise it returns to Reader. Dialogs are modal,
-    // so they keep their own Esc.
+    // Esc first closes the find bar, then leaves distraction-free mode; otherwise it returns
+    // to Reader. Dialogs are modal, so they keep their own Esc.
     if (event->key() == Qt::Key_Escape && m_findBar->isVisible()) {
         m_findBar->closeBar();
+        event->accept();
+        return;
+    }
+    if (event->key() == Qt::Key_Escape && m_distractionFree) {
+        setDistractionFree(false);
         event->accept();
         return;
     }
@@ -356,6 +363,9 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 QAction *MainWindow::addOption(QMenu *menu, const QString &text, const QString &tip, const QKeySequence &keys)
 {
     auto *action = menu->addAction(text);
+    // On the window too, so its shortcut still works while the menu bar is hidden
+    // (distraction-free mode).
+    addAction(action);
     action->setStatusTip(tip);
     action->setToolTip(tip);
     action->setShortcutContext(Qt::ApplicationShortcut);
@@ -450,6 +460,19 @@ void MainWindow::buildMenus()
                                     QKeySequence(QStringLiteral("Ctrl+Shift+B")));
     m_showButtonsAction->setCheckable(true);
     m_showButtonsAction->setChecked(true);
+
+    m_distractionFreeAction = addOption(options, tr("&Distraction-free"),
+                                        tr("Full screen with only your text; Esc leaves"),
+                                        QKeySequence(Qt::Key_F11));
+    m_distractionFreeAction->setCheckable(true);
+    // F11 everywhere, plus the system's own full-screen keys (Ctrl+Cmd+F on macOS).
+    QList<QKeySequence> focusKeys{QKeySequence(Qt::Key_F11)};
+    for (const QKeySequence &keys : QKeySequence::keyBindings(QKeySequence::FullScreen)) {
+        if (!focusKeys.contains(keys))
+            focusKeys.append(keys);
+    }
+    m_distractionFreeAction->setShortcuts(focusKeys);
+    connect(m_distractionFreeAction, &QAction::triggered, this, [this](bool on) { setDistractionFree(on); });
 
     m_syncScrollAction = addOption(options, tr("S&ync scrolling"),
                                    tr("Scroll the writing pane and the preview together"),
@@ -709,9 +732,9 @@ void MainWindow::setShowButtons(bool show)
 {
     m_showButtons = show;
     if (m_fileBar)
-        m_fileBar->setVisible(show);
+        m_fileBar->setVisible(show && !m_distractionFree);
     if (m_formatBar)
-        m_formatBar->setVisible(show && m_editMode);
+        m_formatBar->setVisible(show && m_editMode && !m_distractionFree);
     if (m_showButtonsAction && m_showButtonsAction->isChecked() != show) {
         QSignalBlocker blocker(m_showButtonsAction);
         m_showButtonsAction->setChecked(show);
@@ -722,13 +745,16 @@ void MainWindow::setShowButtons(bool show)
 
 void MainWindow::setEditMode(bool editing)
 {
+    // Reader hides the writing pane, which is all distraction-free mode shows.
+    if (!editing && m_distractionFree)
+        setDistractionFree(false);
     if (m_editMode == editing && m_editor->isVisible() == editing) {
         if (m_editAction && m_editAction->isChecked() != editing) {
             QSignalBlocker blocker(m_editAction);
             m_editAction->setChecked(editing);
         }
         if (m_formatBar)
-            m_formatBar->setVisible(m_showButtons && editing);
+            m_formatBar->setVisible(m_showButtons && editing && !m_distractionFree);
         return;
     }
     // Coming back from Reader, keep the part the user was reading: the preview leads.
@@ -742,7 +768,7 @@ void MainWindow::setEditMode(bool editing)
     if (m_formatMenu)
         m_formatMenu->setEnabled(editing);
     if (m_formatBar)
-        m_formatBar->setVisible(m_showButtons && editing);
+        m_formatBar->setVisible(m_showButtons && editing && !m_distractionFree);
     if (m_editAction && m_editAction->isChecked() != editing) {
         QSignalBlocker blocker(m_editAction);
         m_editAction->setChecked(editing);
@@ -767,6 +793,47 @@ void MainWindow::setEditMode(bool editing)
     }
     QSettings().setValue(QStringLiteral("ui/editMode"), editing);
     updateStatus();
+}
+
+void MainWindow::setDistractionFree(bool on)
+{
+    if (m_distractionFreeAction && m_distractionFreeAction->isChecked() != on) {
+        QSignalBlocker blocker(m_distractionFreeAction);
+        m_distractionFreeAction->setChecked(on);
+    }
+    if (m_distractionFree == on)
+        return;
+    if (on) {
+        m_editModeBeforeFocus = m_editMode;
+        m_windowStateBeforeFocus = windowState();
+        if (!m_editMode)
+            setEditMode(true);
+    }
+    m_distractionFree = on;
+    // Buttons, tabs, preview, status line and menu go; only the writing pane stays. The tab
+    // bar would show itself again when a tab opens, so its auto-hiding is paused meanwhile.
+    m_fileBar->setVisible(!on && m_showButtons);
+    m_formatBar->setVisible(!on && m_showButtons && m_editMode);
+    m_tabBar->setAutoHide(!on);
+    if (on)
+        m_tabBar->hide();
+    m_preview->setVisible(!on);
+    m_status->setVisible(!on);
+    menuBar()->setVisible(!on);
+    if (on)
+        m_findBar->closeBar();
+    centralWidget()->layout()->setContentsMargins(on ? QMargins() : QMargins(8, 8, 8, 8));
+    for (const auto &tab : m_tabs)
+        tab->editor->setCentered(on);
+    if (on) {
+        showFullScreen();
+    } else {
+        setWindowState(m_windowStateBeforeFocus & ~Qt::WindowFullScreen);
+        if (!m_editModeBeforeFocus)
+            setEditMode(false);
+        updatePreview();
+    }
+    m_editor->setFocus(Qt::ShortcutFocusReason);
 }
 
 void MainWindow::changeTextSize(int steps)

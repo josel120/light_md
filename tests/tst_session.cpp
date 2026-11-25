@@ -7,6 +7,10 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QLabel>
+#include <QMenuBar>
+#include <QTabBar>
+#include <QTextBrowser>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QScrollBar>
@@ -314,6 +318,72 @@ private slots:
         QFile untouched(other);
         QVERIFY(untouched.open(QIODevice::ReadOnly));
         QCOMPARE(untouched.readAll(), QByteArray("# other.md\n"));
+    }
+
+    void distractionFreeShowsOnlyTheWritingPane()
+    {
+        QSettings().clear();
+        writeDocument(3);
+        const QString other = writeOther(QStringLiteral("other.md"));
+        ThemeManager themes;
+        MainWindow window(&themes, m_path);
+        showWindow(window);
+        QTest::keyClick(window.m_editor, Qt::Key_F11);
+        QVERIFY(window.m_distractionFree);
+        QVERIFY(window.m_distractionFreeAction->isChecked());
+        QVERIFY(!window.m_fileBar->isVisible());
+        QVERIFY(!window.m_formatBar->isVisible());
+        QVERIFY(!window.m_preview->isVisible());
+        QVERIFY(!window.m_status->isVisible());
+        QVERIFY(!window.menuBar()->isVisible());
+        QVERIFY(window.m_editor->isVisible());
+        QVERIFY(window.m_editor->isCentered());
+        QVERIFY(window.m_editor->viewport()->geometry().x() > 0);
+        // A second tab doesn't bring the tab bar back, and its pane is centered too.
+        QVERIFY(window.loadFile(other));
+        QCOMPARE(tabCount(window), 2);
+        QVERIFY(!window.m_tabBar->isVisible());
+        QVERIFY(window.m_editor->isCentered());
+        // Esc goes back to everything as it was.
+        QTest::keyClick(window.m_editor, Qt::Key_Escape);
+        QVERIFY(!window.m_distractionFree);
+        QVERIFY(window.m_fileBar->isVisible());
+        QVERIFY(window.m_preview->isVisible());
+        QVERIFY(window.menuBar()->isVisible());
+        QVERIFY(window.m_tabBar->isVisible());
+        QVERIFY(!window.m_editor->isCentered());
+        QVERIFY(!window.isFullScreen());
+    }
+
+    void shortcutsWorkWithoutTheMenu()
+    {
+        QSettings().clear();
+        ThemeManager themes;
+        MainWindow window(&themes);
+        showWindow(window);
+        window.setDistractionFree(true);
+        window.m_editor->setPlainText(QStringLiteral("word"));
+        window.m_editor->selectAll();
+        QTest::keyClick(window.m_editor, Qt::Key_B, Qt::ControlModifier);
+        QCOMPARE(window.m_editor->toPlainText(), QStringLiteral("**word**"));
+        // Reader needs the writing pane hidden, so it ends distraction-free mode.
+        QTest::keyClick(window.m_editor, Qt::Key_R, Qt::ControlModifier);
+        QVERIFY(!window.m_distractionFree);
+        QVERIFY(!window.m_editMode);
+    }
+
+    void startsFromReaderAndGoesBackToIt()
+    {
+        QSettings().clear();
+        ThemeManager themes;
+        MainWindow window(&themes, m_path);
+        showWindow(window);
+        window.setEditMode(false);
+        window.setDistractionFree(true);
+        QVERIFY(window.m_editor->isVisible());
+        window.setDistractionFree(false);
+        QVERIFY(!window.m_editMode);
+        QVERIFY(window.m_preview->isVisible());
     }
 
     void anotherSpellingFindsTheSameTab()

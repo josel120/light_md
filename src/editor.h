@@ -20,8 +20,14 @@ public:
     const SpellChecker *speller = nullptr;
     std::function<void(const QString &)> addWord;
 
+    // Distraction-free mode: the text in a comfortable column in the middle, with room around it.
+    void setCentered(bool centered);
+    bool isCentered() const { return m_centered; }
+
 protected:
     void contextMenuEvent(QContextMenuEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
+    void changeEvent(QEvent *event) override;
 
     bool canInsertFromMimeData(const QMimeData *source) const override
     {
@@ -40,4 +46,9 @@ protected:
         }
         QPlainTextEdit::insertFromMimeData(source);
     }
+
+private:
+    void updateMargins();
+
+    bool m_centered = false;
 };
