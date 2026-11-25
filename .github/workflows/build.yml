@@ -81,7 +81,8 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \n            -DLIGHT_MD_TESTS=ON
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+            -DLIGHT_MD_TESTS=ON
           cmake --build build --parallel
           cmake --install build --prefix "$PWD/dist"
           codesign --force --deep --sign - dist/light_md.app
