@@ -11,6 +11,8 @@ qt_standard_project_setup()
 # Everything except main() lives in a small library, so the unit tests can use it too.
 qt_add_library(light_md_core STATIC
     src/editor.h
+    src/export.cpp
+    src/export.h
     src/findbar.cpp
     src/findbar.h
     src/formatting.cpp

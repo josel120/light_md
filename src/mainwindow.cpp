@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 
 #include "editor.h"
+#include "export.h"
 #include "findbar.h"
 #include "formatting.h"
 #include "highlighter.h"
@@ -41,6 +42,7 @@
 #include <QStackedWidget>
 #include <QTabBar>
 #include <QTextBrowser>
+#include <QTextDocumentWriter>
 #include <QTextDocument>
 #include <QTimer>
 #include <QUrl>
@@ -404,6 +406,12 @@ void MainWindow::buildMenus()
     auto *actPdf = addOption(options, QStringLiteral("Export to &PDF..."),
                              QStringLiteral("Create a nicely formatted PDF to send or share"),
                              QKeySequence(QStringLiteral("Ctrl+Shift+E")));
+    auto *actHtml = addOption(options, QStringLiteral("Export to &HTML..."),
+                              QStringLiteral("Create a web page that works on its own, pictures included"),
+                              QKeySequence());
+    auto *actOdt = addOption(options, QStringLiteral("Export for &Word (.odt)..."),
+                             QStringLiteral("Create a document that opens in Word, LibreOffice or Google Docs"),
+                             QKeySequence());
     auto *actPrint = addOption(options, QStringLiteral("&Print..."), QStringLiteral("Print the document"),
                                QKeySequence::Print);
     options->addSeparator();
@@ -584,6 +592,8 @@ void MainWindow::buildMenus()
     connect(actSave, &QAction::triggered, this, [this] { saveDocument(); });
     connect(actSaveAs, &QAction::triggered, this, [this] { saveDocumentAs(); });
     connect(actPdf, &QAction::triggered, this, [this] { exportPdf(); });
+    connect(actHtml, &QAction::triggered, this, [this] { exportHtml(); });
+    connect(actOdt, &QAction::triggered, this, [this] { exportOdt(); });
     connect(actPrint, &QAction::triggered, this, [this] { printDocument(); });
     connect(actHelp, &QAction::triggered, this, [this] { showHelp(); });
     connect(actUpdates, &QAction::triggered, this, [this] { checkForUpdates(); });
@@ -1104,6 +1114,50 @@ void MainWindow::exportPdf()
     m_status->setText(QStringLiteral("PDF created: %1").arg(QDir::toNativeSeparators(path)));
 }
 
+// Asks where to export, adding `extension` when the name has none. Empty when cancelled.
+QString MainWindow::exportPath(const QString &title, const QString &extension, const QString &filter)
+{
+    QString path = QFileDialog::getSaveFileName(this, title, suggestedPath(extension), filter);
+    if (!path.isEmpty() && QFileInfo(path).suffix().compare(extension.mid(1), Qt::CaseInsensitive) != 0)
+        path += extension;
+    return path;
+}
+
+void MainWindow::exportHtml()
+{
+    const QString path = exportPath(QStringLiteral("Export to HTML"), QStringLiteral(".html"),
+                                    QStringLiteral("Web page (*.html *.htm)"));
+    if (path.isEmpty())
+        return;
+    const QString title = m_filePath.isEmpty() ? QStringLiteral("Document") : QFileInfo(m_filePath).completeBaseName();
+    const QString folder = m_filePath.isEmpty() ? QString() : QFileInfo(m_filePath).absolutePath();
+    const QByteArray bytes = Export::standaloneHtml(m_editor->toPlainText(), title, folder).toUtf8();
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) {
+        QMessageBox::warning(this, QStringLiteral("Could not export"),
+                             QStringLiteral("Could not create the web page:\n%1").arg(path));
+        return;
+    }
+    m_status->setText(QStringLiteral("Web page created: %1").arg(QDir::toNativeSeparators(path)));
+}
+
+// OpenDocument text: Word, LibreOffice and Google Docs all open it. Pictures come from the preview.
+void MainWindow::exportOdt()
+{
+    const QString path = exportPath(QStringLiteral("Export for Word"), QStringLiteral(".odt"),
+                                    QStringLiteral("OpenDocument text (*.odt)"));
+    if (path.isEmpty())
+        return;
+    updatePreview();
+    QTextDocumentWriter writer(path, "odf");
+    if (!writer.write(m_preview->document())) {
+        QMessageBox::warning(this, QStringLiteral("Could not export"),
+                             QStringLiteral("Could not create the document:\n%1").arg(path));
+        return;
+    }
+    m_status->setText(QStringLiteral("Document created: %1").arg(QDir::toNativeSeparators(path)));
+}
+
 void MainWindow::printDocument()
 {
     updatePreview();
@@ -1131,7 +1185,7 @@ void MainWindow::showHelp()
             "Ctrl++ / Ctrl+- / Ctrl+0 — Bigger / smaller / normal text (or Ctrl + mouse wheel)</p>"
             "<p><b>File</b><br>"
             "Ctrl+N New · Ctrl+O Open · Ctrl+S Save · Ctrl+Shift+S Save as<br>"
-            "Ctrl+Shift+E Export PDF · Ctrl+P Print</p>"
+            "Ctrl+Shift+E Export PDF · Ctrl+P Print · Options → Export to HTML or for Word (.odt)</p>"
             "<p><b>Format</b> (while editing)<br>"
             "Ctrl+Z Undo · Ctrl+Shift+Z / Ctrl+Y Redo<br>"
             "Ctrl+B Bold · Ctrl+I Italic · Ctrl+K Link<br>"
