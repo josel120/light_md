@@ -28,6 +28,7 @@ Write on the left, see the formatted result on the right. Format with the button
 - Reopens the document you had open last time, right where you left off (cursor and scroll), and remembers that spot for each recent document.
 - Make the text bigger or smaller in both panes with Ctrl + mouse wheel or Ctrl+Plus / Ctrl+Minus (Ctrl+0 goes back to normal). The size is remembered.
 - Never lose your work: a few seconds after each change, light_md keeps a recovery copy. If the app or the computer crashes, it offers to restore your unsaved changes the next time you open it.
+- The writing pane is easier to read: titles are bigger, **bold** and *italic* look the part, links and code stand out and quotes are dimmed. The Markdown symbols stay visible, in a quieter color, and the colors follow the theme.
 - Word count and an unsaved-changes warning, including when closing the window.
 - **Check for updates** button: tells you when a new version is out and downloads the right file for your system.
 - Themes: **System** (desktop default), **Minimal** (quiet light look), **Dark** (soft dark look, Ctrl+Shift+4), **Omarchy** (live desktop theme on Omarchy Linux only). Windows and macOS keep **System** by default.

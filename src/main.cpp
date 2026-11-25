@@ -1,3 +1,4 @@
+#include "highlighter.h"
 #include "theme.h"
 
 #include <QAbstractButton>
@@ -86,6 +87,9 @@ public:
         m_editor->setPlaceholderText(QStringLiteral("Type your text here..."));
         m_editor->setUndoRedoEnabled(true);
         m_editor->viewport()->installEventFilter(this);
+        // Watched for palette changes, so the highlighting follows every theme switch.
+        m_editor->installEventFilter(this);
+        m_highlighter = new MarkdownHighlighter(m_editor->document());
         m_preview = new QTextBrowser(m_splitter);
         m_preview->setOpenExternalLinks(true);
         // Base sizes; the user's bigger/smaller text setting is added on top (see applyTextSize).
@@ -307,6 +311,10 @@ protected:
                 return true;
             }
         }
+        // A new theme (or the desktop switching light/dark under System) repaints the editor;
+        // re-color once the palette has settled.
+        if (watched == m_editor && event->type() == QEvent::PaletteChange)
+            QTimer::singleShot(0, this, [this] { updateHighlighter(); });
         if (watched == m_editor->viewport()) {
             if (event->type() == QEvent::DragEnter || event->type() == QEvent::DragMove) {
                 auto *drag = static_cast<QDragMoveEvent *>(event);
@@ -741,7 +749,13 @@ private:
         QFont readFont = m_preview->font();
         readFont.setPointSizeF(m_previewBaseSize + m_textSize);
         m_preview->setFont(readFont);
+        updateHighlighter();
         updateStatus();
+    }
+
+    void updateHighlighter()
+    {
+        m_highlighter->setStyle(m_editor->palette(), m_editorBaseSize + m_textSize);
     }
 
     static QString droppedFile(const QMimeData *mime)
@@ -1660,6 +1674,9 @@ private:
                 "<p><b>Theme</b><br>"
                 "Ctrl+Shift+1 System · Ctrl+Shift+2 Minimal · Ctrl+Shift+3 Omarchy "
                 "(Omarchy only where available) · Ctrl+Shift+4 Dark</p>"
+                "<p><b>Easy to read while you write</b><br>"
+                "Titles show bigger, bold and italic look the part, links and code stand out and quotes are "
+                "dimmed. The Markdown symbols stay, in a quieter color.</p>"
                 "<p><b>Never lose your work</b><br>"
                 "A few seconds after each change, light_md keeps a recovery copy. If it closes unexpectedly, "
                 "it offers to restore your unsaved changes the next time you open it.</p>"
@@ -1676,6 +1693,7 @@ private:
     QHBoxLayout *m_formatBarLayout = nullptr;
     QSplitter *m_splitter = nullptr;
     QPlainTextEdit *m_editor = nullptr;
+    MarkdownHighlighter *m_highlighter = nullptr;
     QTextBrowser *m_preview = nullptr;
     QLabel *m_status = nullptr;
     QAction *m_editAction = nullptr;
