@@ -3,6 +3,7 @@
 What light_md already does, what is coming next, and ideas for later.
 Tick a box (`[x]`) and move the line to **Done** when a feature is finished.
 While working on something, move it to **In progress** so we always know where we left off.
+Each open item links to its GitHub issue; write "Closes #N" in a pull request to close the issue when it is merged.
 
 ## In progress
 
@@ -44,31 +45,33 @@ Order agreed on 2026-11-24, one at a time:
 - [x] GitHub Actions: builds Windows, macOS and Linux on every push and attaches the Windows and macOS packages to each release
 - [x] Check for updates button (downloads the right file for your system)
 
-### Version 1.4 (in progress)
+### Version 1.4 (in progress, release tracked in [#9](https://github.com/josel120/light_md/issues/9))
 - [x] Synchronized scrolling between the editor and the preview (Options → Sync scrolling turns it off)
 - [x] Dark theme for every system (Options → Theme → Dark, Ctrl+Shift+4); the title bar follows the theme too
 - [x] Reopens the last document on start, at the same cursor and scroll position (also remembered for each recent document)
 - [x] Bigger or smaller text in both panes (Ctrl + mouse wheel, Ctrl+Plus / Ctrl+Minus, Ctrl+0 for normal; Options → Text size), remembered
 
+### Version 1.5 (in progress)
+- [x] Autosave and recovery after a crash: a copy of unsaved changes is kept every few seconds, and offered back after a crash ([#10](https://github.com/josel120/light_md/issues/10))
+
 ## Next
 
-- [ ] Autosave and recovery after a crash
-- [ ] Syntax highlighting in the editor (titles bigger, bold in bold, links in color)
-- [ ] Paste pictures from the clipboard (saved next to the document)
+- [ ] Syntax highlighting in the editor (titles bigger, bold in bold, links in color) ([#11](https://github.com/josel120/light_md/issues/11))
+- [ ] Paste pictures from the clipboard (saved next to the document) ([#12](https://github.com/josel120/light_md/issues/12))
 
 ## Later
 
-- [ ] Tabs to keep several documents open
-- [ ] Export to HTML (and maybe `.docx`)
-- [ ] Interface in Spanish, Portuguese, French and German (`QTranslator`)
-- [ ] Spell checker (Hunspell)
-- [ ] Distraction-free mode (full screen, editor only)
-- [ ] Outline panel to jump between titles
+- [ ] Tabs to keep several documents open ([#13](https://github.com/josel120/light_md/issues/13))
+- [ ] Export to HTML (and maybe `.docx`) ([#14](https://github.com/josel120/light_md/issues/14))
+- [ ] Interface in Spanish, Portuguese, French and German (`QTranslator`) ([#15](https://github.com/josel120/light_md/issues/15))
+- [ ] Spell checker (Hunspell) ([#16](https://github.com/josel120/light_md/issues/16))
+- [ ] Distraction-free mode (full screen, editor only) ([#17](https://github.com/josel120/light_md/issues/17))
+- [ ] Outline panel to jump between titles ([#18](https://github.com/josel120/light_md/issues/18))
 
 ## Engineering
 
-- [ ] Split `src/main.cpp` into smaller files (window, formatting actions, find bar)
-- [ ] Automated tests for the formatting functions (Qt Test)
-- [ ] Windows installer (Inno Setup or MSIX) that registers `.md` files
-- [ ] Test the macOS app on a real Mac (it is built in CI but nobody has tried it yet)
-- [ ] Sign and notarize the macOS app with an Apple Developer ID, so it opens without the security warning
+- [ ] Split `src/main.cpp` into smaller files (window, formatting actions, find bar) ([#19](https://github.com/josel120/light_md/issues/19))
+- [ ] Automated tests for the formatting functions (Qt Test) ([#20](https://github.com/josel120/light_md/issues/20))
+- [ ] Windows installer (Inno Setup or MSIX) that registers `.md` files ([#21](https://github.com/josel120/light_md/issues/21))
+- [ ] Test the macOS app on a real Mac (it is built in CI but nobody has tried it yet) ([#22](https://github.com/josel120/light_md/issues/22))
+- [ ] Sign and notarize the macOS app with an Apple Developer ID, so it opens without the security warning ([#23](https://github.com/josel120/light_md/issues/23))

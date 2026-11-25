@@ -23,6 +23,7 @@ Un éditeur Markdown léger en C++ et Qt 6, ouvert à tous les utilisateurs.
 - Annuler et rétablir, plus des raccourcis clavier (Ctrl+S, Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+1, Ctrl+2).
 - Rouvre au démarrage le dernier document, exactement là où vous vous étiez arrêté (curseur et défilement), et retient cet endroit pour chaque document récent.
 - Texte plus grand ou plus petit dans les deux volets avec Ctrl + molette de la souris ou Ctrl+Plus / Ctrl+Moins (Ctrl+0 revient à la taille normale). La taille est mémorisée.
+- Vous ne perdez pas votre travail : quelques secondes après chaque modification, light_md garde une copie de récupération. Si l'application ou l'ordinateur plante, il propose de restaurer vos modifications non enregistrées à la prochaine ouverture.
 - Compteur de mots et avertissement en cas de modifications non enregistrées, y compris à la fermeture de la fenêtre.
 - Bouton **Check for updates** (rechercher des mises à jour) : vous prévient quand une nouvelle version sort et télécharge le bon fichier pour votre système.
 - **macOS** (13 Ventura ou plus récent) : à partir de la version 1.3, chaque release contient un `macos.zip`. Décompressez-le et glissez **light_md** dans Applications. Comme l'app n'est pas encore signée par Apple, macOS la bloque la première fois : ouvrez **Réglages Système → Confidentialité et sécurité** et cliquez sur **Ouvrir quand même**.

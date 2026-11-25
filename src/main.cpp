@@ -7,6 +7,7 @@
 #include <QCheckBox>
 #include <QCloseEvent>
 #include <QDesktopServices>
+#include <QDateTime>
 #include <QDir>
 #include <QDragEnterEvent>
 #include <QDropEvent>
@@ -20,6 +21,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLockFile>
 #include <QKeyEvent>
 #include <QKeySequence>
 #include <QLabel>
@@ -38,6 +40,7 @@
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QSaveFile>
+#include <QStandardPaths>
 #include <QScrollBar>
 #include <QSettings>
 #include <QSignalBlocker>
@@ -48,10 +51,13 @@
 #include <QTextDocument>
 #include <QTimer>
 #include <QUrl>
+#include <QUuid>
 #include <QVBoxLayout>
 #include <QVersionNumber>
 #include <QWheelEvent>
 #include <QWidget>
+
+#include <memory>
 
 class MainWindow : public QMainWindow
 {
@@ -108,11 +114,19 @@ public:
         m_statusTimer.setSingleShot(true);
         m_statusTimer.setInterval(350);
         connect(&m_statusTimer, &QTimer::timeout, this, [this] { updateStatus(); });
+        // A few seconds after a change, keep a recovery copy in case the app or the computer crashes.
+        m_autosaveTimer.setSingleShot(true);
+        m_autosaveTimer.setInterval(5000);
+        connect(&m_autosaveTimer, &QTimer::timeout, this, [this] { writeRecovery(); });
+        startRecovery();
 
         connect(m_editor, &QPlainTextEdit::textChanged, this, [this] {
             // Any edit (typed, pasted or from a button) puts the writing pane in charge of scrolling.
             m_previewLeads = false;
             m_previewTimer.start();
+            // Not restarted on every key, so a long typing session still gets a recovery copy.
+            if (!m_autosaveTimer.isActive())
+                m_autosaveTimer.start();
             m_statusTimer.start();
         });
         connect(m_editor->document(), &QTextDocument::modificationChanged, this, [this](bool changed) {
@@ -174,6 +188,9 @@ public:
         // Apply after load so a failed open still gets remembered chrome.
         setShowButtons(showButtons);
         setEditMode(editMode);
+
+        // After the window is on screen, so the question appears in front of it.
+        QTimer::singleShot(0, this, [this] { offerRecovery(); });
     }
 
     bool loadFile(const QString &path)
@@ -187,6 +204,7 @@ public:
         rememberPosition();
         m_editor->setPlainText(QString::fromUtf8(file.readAll()));
         m_editor->document()->setModified(false);
+        clearRecovery();
         setFilePath(path);
         addRecentFile(path);
         m_preview->verticalScrollBar()->setValue(0);
@@ -211,6 +229,8 @@ protected:
             settings.remove(QStringLiteral("session/lastFile"));
         else
             settings.setValue(QStringLiteral("session/lastFile"), cleanPath(m_filePath));
+        // A normal close (saved, or "Don't save") leaves nothing to recover.
+        clearRecovery();
         event->accept();
     }
 
@@ -1165,6 +1185,148 @@ private:
         });
     }
 
+    // Crash recovery. Each running window owns "<id>.md" (the text) and "<id>.json" (which document
+    // it belongs to) in the app's data folder, plus "<id>.lock", held while the window is open.
+    // A copy whose lock nobody holds was left behind by a crash.
+    static QString recoveryFolder()
+    {
+        return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+            .filePath(QStringLiteral("recovery"));
+    }
+
+    QString recoveryFile(const QString &extension) const
+    {
+        return QDir(recoveryFolder()).filePath(m_recoveryId + extension);
+    }
+
+    void startRecovery()
+    {
+        QDir().mkpath(recoveryFolder());
+        m_recoveryId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+        m_recoveryLock = std::make_unique<QLockFile>(recoveryFile(QStringLiteral(".lock")));
+        // 0 = only a dead process makes the lock stale, however long the window stays open.
+        m_recoveryLock->setStaleLockTime(0);
+        m_recoveryLock->tryLock(0);
+    }
+
+    void writeRecovery()
+    {
+        if (!m_editor->document()->isModified()) {
+            clearRecovery();
+            return;
+        }
+        // The text first and the description last, so a description always points to a complete copy.
+        QSaveFile text(recoveryFile(QStringLiteral(".md")));
+        if (!text.open(QIODevice::WriteOnly) || text.write(m_editor->toPlainText().toUtf8()) < 0 || !text.commit())
+            return;
+        const QJsonObject info{{QStringLiteral("path"), m_filePath},
+                               {QStringLiteral("savedAt"), QDateTime::currentDateTime().toString(Qt::ISODate)}};
+        QSaveFile json(recoveryFile(QStringLiteral(".json")));
+        if (json.open(QIODevice::WriteOnly)) {
+            json.write(QJsonDocument(info).toJson());
+            json.commit();
+        }
+    }
+
+    void clearRecovery()
+    {
+        m_autosaveTimer.stop();
+        QFile::remove(recoveryFile(QStringLiteral(".json")));
+        QFile::remove(recoveryFile(QStringLiteral(".md")));
+    }
+
+    // Offers the newest copy left behind by a crashed window, if any.
+    void offerRecovery()
+    {
+        const QDir folder(recoveryFolder());
+        QString bestId;
+        QJsonObject bestInfo;
+        std::unique_ptr<QLockFile> bestLock;
+        const QStringList descriptions = folder.entryList({QStringLiteral("*.json")}, QDir::Files);
+        for (const QString &name : descriptions) {
+            const QString id = QFileInfo(name).completeBaseName();
+            if (id == m_recoveryId || !QFileInfo::exists(folder.filePath(id + QStringLiteral(".md"))))
+                continue;
+            // Locked = that window is still open (maybe a second light_md); leave its copy alone.
+            auto lock = std::make_unique<QLockFile>(folder.filePath(id + QStringLiteral(".lock")));
+            lock->setStaleLockTime(0);
+            if (!lock->tryLock(0))
+                continue;
+            QFile file(folder.filePath(name));
+            if (!file.open(QIODevice::ReadOnly))
+                continue;
+            const QJsonObject info = QJsonDocument::fromJson(file.readAll()).object();
+            if (bestId.isEmpty() || info.value(QStringLiteral("savedAt")).toString()
+                                        > bestInfo.value(QStringLiteral("savedAt")).toString()) {
+                bestId = id;
+                bestInfo = info;
+                bestLock = std::move(lock);
+            }
+        }
+        // A crashed window with nothing unsaved leaves only its lock behind; tidy those up.
+        const QStringList locks = folder.entryList({QStringLiteral("*.lock")}, QDir::Files);
+        for (const QString &name : locks) {
+            const QString id = QFileInfo(name).completeBaseName();
+            if (id == m_recoveryId || id == bestId || QFileInfo::exists(folder.filePath(id + QStringLiteral(".json"))))
+                continue;
+            QLockFile stale(folder.filePath(name));
+            stale.setStaleLockTime(0);
+            if (stale.tryLock(0))
+                stale.unlock(); // Unlocking removes the file.
+        }
+        if (bestId.isEmpty())
+            return;
+
+        QFile textFile(folder.filePath(bestId + QStringLiteral(".md")));
+        if (!textFile.open(QIODevice::ReadOnly))
+            return;
+        const QString text = QString::fromUtf8(textFile.readAll());
+        textFile.close();
+        const QString path = bestInfo.value(QStringLiteral("path")).toString();
+        const QDateTime savedAt =
+            QDateTime::fromString(bestInfo.value(QStringLiteral("savedAt")).toString(), Qt::ISODate);
+        const QString name = path.isEmpty() ? QStringLiteral("a new document") : QFileInfo(path).fileName();
+
+        QMessageBox box(QMessageBox::Question, QStringLiteral("Restore unsaved changes?"),
+                        QStringLiteral("light_md closed unexpectedly while you had unsaved changes in <b>%1</b>.<br>"
+                                       "A copy was kept automatically at %2.<br><br>"
+                                       "Do you want to get those changes back?")
+                            .arg(name.toHtmlEscaped(), QLocale().toString(savedAt.time(), QLocale::ShortFormat)),
+                        QMessageBox::NoButton, this);
+        QPushButton *restore = box.addButton(QStringLiteral("Restore"), QMessageBox::AcceptRole);
+        box.addButton(QStringLiteral("Discard"), QMessageBox::RejectRole);
+        box.setDefaultButton(restore);
+        box.exec();
+
+        // Answered either way: the old copy is no longer needed.
+        QFile::remove(folder.filePath(bestId + QStringLiteral(".json")));
+        QFile::remove(folder.filePath(bestId + QStringLiteral(".md")));
+        bestLock.reset();
+        if (box.clickedButton() != restore)
+            return;
+
+        // Open the original document first, so Save writes back to it.
+        if (!path.isEmpty() && QFileInfo::exists(path) && cleanPath(path) != cleanPath(m_filePath)) {
+            if (!askSaveIfModified() || !loadFile(path))
+                return;
+        } else if (path.isEmpty() && !m_filePath.isEmpty()) {
+            if (!askSaveIfModified())
+                return;
+            m_editor->clear();
+            setFilePath(QString());
+        } else if (!path.isEmpty() && !QFileInfo::exists(path)) {
+            // The original was moved or deleted; keep its name so Save recreates it there.
+            setFilePath(path);
+        }
+        // Replace through the cursor so the change can be undone (Ctrl+Z shows the saved version).
+        QTextCursor cursor(m_editor->document());
+        cursor.select(QTextCursor::Document);
+        cursor.insertText(text);
+        m_editor->document()->setModified(true);
+        updatePreview();
+        m_status->setText(QStringLiteral("Unsaved changes restored. Save to keep them."));
+    }
+
     static void addRecentFile(const QString &path)
     {
         const QString clean = cleanPath(path);
@@ -1334,6 +1496,7 @@ private:
         rememberPosition();
         m_editor->clear();
         m_editor->document()->setModified(false);
+        clearRecovery();
         setFilePath(QString());
         updatePreview();
         setEditMode(true);
@@ -1375,6 +1538,7 @@ private:
             return false;
         }
         m_editor->document()->setModified(false);
+        clearRecovery();
         setFilePath(path);
         addRecentFile(path);
         return true;
@@ -1472,6 +1636,9 @@ private:
                 "<p><b>Theme</b><br>"
                 "Ctrl+Shift+1 System · Ctrl+Shift+2 Minimal · Ctrl+Shift+3 Omarchy "
                 "(Omarchy only where available) · Ctrl+Shift+4 Dark</p>"
+                "<p><b>Never lose your work</b><br>"
+                "A few seconds after each change, light_md keeps a recovery copy. If it closes unexpectedly, "
+                "it offers to restore your unsaved changes the next time you open it.</p>"
                 "<p><b>Updates</b><br>"
                 "<i>Check for updates</i> tells you when a new version is ready and downloads it.</p>"
                 "<p>F1 — Help. You can also drag a document onto the window to open it, "
@@ -1501,6 +1668,9 @@ private:
     QNetworkReply *m_updateReply = nullptr;
     QTimer m_previewTimer;
     QTimer m_statusTimer;
+    QTimer m_autosaveTimer;
+    QString m_recoveryId;
+    std::unique_ptr<QLockFile> m_recoveryLock;
     QString m_filePath;
     bool m_editMode = true;
     bool m_showButtons = true;
