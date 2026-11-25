@@ -464,6 +464,18 @@ Escreva à **esquerda** e veja o resultado à *direita*.
         <translation>O light_md usará o novo idioma na próxima vez que você o abrir.</translation>
     </message>
     <message>
+        <source>&amp;Spelling</source>
+        <translation>&amp;Ortografia</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Desligada</translation>
+    </message>
+    <message>
+        <source>Open my dictionaries folder</source>
+        <translation>Abrir minha pasta de dicionários</translation>
+    </message>
+    <message>
         <source>Check for &amp;updates...</source>
         <translation>Procurar at&amp;ualizações...</translation>
     </message>
@@ -588,6 +600,20 @@ Salvar agora?</translation>
     <message>
         <source>Picture saved as %1</source>
         <translation>Imagem salva como %1</translation>
+    </message>
+    <message>
+        <source>Spelling</source>
+        <translation>Ortografia</translation>
+    </message>
+    <message>
+        <source>No dictionary for this language was found. You can put one (.aff and .dic files) in your dictionaries folder: %1</source>
+        <translation>Nenhum dicionário foi encontrado para este idioma. Você pode colocar um (arquivos .aff e .dic) na sua pasta de dicionários: %1</translation>
+    </message>
+    <message>
+        <source>Could not save the word in:
+%1</source>
+        <translation>Não foi possível salvar a palavra em:
+%1</translation>
     </message>
     <message>
         <source>Save changes</source>
@@ -838,6 +864,17 @@ Ele foi removido da lista.</translation>
     <message>
         <source>Not now</source>
         <translation>Agora não</translation>
+    </message>
+</context>
+<context>
+    <name>MarkdownEditor</name>
+    <message>
+        <source>No suggestions</source>
+        <translation>Nenhuma sugestão</translation>
+    </message>
+    <message>
+        <source>Add “%1” to the dictionary</source>
+        <translation>Adicionar “%1” ao dicionário</translation>
     </message>
 </context>
 <context>

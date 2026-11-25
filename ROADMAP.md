@@ -17,7 +17,12 @@ Order agreed on 2026-11-25, one at a time, one pull request each:
 6. [x] Export to HTML (#14)
 7. [x] Interface in Spanish, Portuguese, French and German (#15)
 
-Open for contributors (left for friends to pick up, 2026-11-25): spell checker (#16), distraction-free mode (#17), outline panel (#18), Windows installer (#21). Comment on the issue before starting so two people don't take the same one.
+Then (2026-11-25, nobody had claimed them): spell checker (#16), distraction-free mode (#17), outline panel (#18), Windows installer (#21), in that order.
+
+8. [x] Spell checker (#16)
+9. [ ] Distraction-free mode (#17)
+10. [ ] Outline panel to jump between titles (#18)
+11. [ ] Windows installer that registers .md files (#21)
 
 Need a person: testing on a real Mac (#22), signing with an Apple Developer ID (#23) and publishing releases (#9).
 
@@ -67,6 +72,7 @@ Need a person: testing on a real Mac (#22), signing with an Apple Developer ID (
 - [x] Tabs: several documents open at once, each with its own undo history, unsaved marker and scroll position; the tabs come back on the next start, and crash recovery restores every tab ([#13](https://github.com/josel120/light_md/issues/13))
 - [x] Export to HTML (one self-contained page, pictures embedded) and to `.odt` for Word, LibreOffice and Google Docs ([#14](https://github.com/josel120/light_md/issues/14))
 - [x] Interface in English, Spanish, Portuguese, French and German: follows the system language, Options → Language to change it ([#15](https://github.com/josel120/light_md/issues/15))
+- [x] Spell checker (Hunspell) in the five interface languages: red wave under misspelled words, corrections and "Add to dictionary" on right-click, code and addresses skipped; Options → Spelling picks the language or switches it off ([#16](https://github.com/josel120/light_md/issues/16))
 
 ## Next
 
@@ -75,7 +81,6 @@ Nothing queued; the items below are being worked through in the order listed und
 ## Later
 
 - [ ] Export to `.docx` (needs a library or converter; `.odt` already opens in Word)
-- [ ] Spell checker (Hunspell) ([#16](https://github.com/josel120/light_md/issues/16))
 - [ ] Distraction-free mode (full screen, editor only) ([#17](https://github.com/josel120/light_md/issues/17))
 - [ ] Outline panel to jump between titles ([#18](https://github.com/josel120/light_md/issues/18))
 

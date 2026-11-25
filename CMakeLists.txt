@@ -8,8 +8,11 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets PrintSupport Network LinguistTools)
 
 qt_standard_project_setup()
 
+include(cmake/Spelling.cmake)
+
 # Everything except main() lives in a small library, so the unit tests can use it too.
 set(LIGHT_MD_CORE_SOURCES
+    src/editor.cpp
     src/editor.h
     src/export.cpp
     src/export.h
@@ -22,6 +25,8 @@ set(LIGHT_MD_CORE_SOURCES
     src/mainwindow.cpp
     src/mainwindow.h
     src/session.cpp
+    src/spellcheck.cpp
+    src/spellcheck.h
     src/tabs.cpp
     src/theme.cpp
     src/theme.h
@@ -30,6 +35,7 @@ set(LIGHT_MD_CORE_SOURCES
 qt_add_library(light_md_core STATIC ${LIGHT_MD_CORE_SOURCES})
 target_include_directories(light_md_core PUBLIC src)
 target_link_libraries(light_md_core PUBLIC Qt6::Widgets Qt6::PrintSupport Qt6::Network)
+target_link_libraries(light_md_core PRIVATE light_md_hunspell)
 target_compile_definitions(light_md_core PUBLIC LIGHT_MD_VERSION="${PROJECT_VERSION}")
 
 qt_add_executable(light_md
@@ -68,6 +74,9 @@ endif()
 if(APPLE)
     target_sources(light_md PRIVATE icons/light_md.icns)
     set_source_files_properties(icons/light_md.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    # The dictionaries go inside the app, in Contents/Resources/dictionaries.
+    target_sources(light_md PRIVATE ${LIGHT_MD_DICTIONARIES})
+    set_source_files_properties(${LIGHT_MD_DICTIONARIES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/dictionaries)
     set_target_properties(light_md PROPERTIES
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/packaging/macos/Info.plist.in
         MACOSX_BUNDLE_BUNDLE_NAME light_md
@@ -95,6 +104,12 @@ endif()
 # "cmake --install build --prefix dist" creates a folder ready to copy
 # to another computer, with the Qt libraries included where deploy supports it.
 install(TARGETS light_md BUNDLE DESTINATION . RUNTIME DESTINATION bin)
+# Spell checking dictionaries, next to the program (inside the app on macOS, see above).
+if(WIN32)
+    install(FILES ${LIGHT_MD_DICTIONARIES} DESTINATION bin/dictionaries)
+elseif(UNIX AND NOT APPLE)
+    install(FILES ${LIGHT_MD_DICTIONARIES} DESTINATION share/light_md/dictionaries)
+endif()
 
 if(UNIX AND NOT APPLE)
     install(FILES packaging/linux/light_md.desktop

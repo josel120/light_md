@@ -35,6 +35,7 @@ Escreva à esquerda e veja o resultado formatado à direita, na hora. Nunca usou
 - Seletor de tema: **System** (área de trabalho), **Minimal** (visual claro e sóbrio), **Dark** (escuro e suave, Ctrl+Shift+4), **Omarchy** (acompanha o tema Omarchy no Linux).
 - Atalhos: **Ctrl+Shift+B** mostrar ou ocultar os botões, **Ctrl+E** editar, **Ctrl+R** / **Esc** só leitura; o restante está em Options (tabela em [README.md](README.md)).
 - Botão Help (ajuda) com um guia curto.
+- Corretor ortográfico em inglês, espanhol, português, francês e alemão: palavras com erro ganham uma onda vermelha, e o clique direito oferece correções ou adiciona a palavra ao seu dicionário. Código e endereços web não são verificados. Escolha o idioma ou desligue em **Opções → Ortografia**.
 
 Veja [ROADMAP.md](ROADMAP.md) (em inglês) para saber o que já está pronto e o que vem a seguir.
 

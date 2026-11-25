@@ -35,6 +35,7 @@ Links schreiben, rechts sofort das formatierte Ergebnis sehen. Neu bei Markdown?
 - Themenwahl: **System** (Desktop), **Minimal** (ruhiges helles Erscheinungsbild), **Dark** (sanftes dunkles Erscheinungsbild, Strg+Umschalt+4), **Omarchy** (folgt dem Omarchy-Thema unter Linux).
 - Tastenkürzel: **Ctrl+Shift+B** Schaltflächen ein- oder ausblenden, **Ctrl+E** bearbeiten, **Ctrl+R** / **Esc** nur lesen; alles Weitere unter Options (Tabelle in [README.md](README.md)).
 - Eine Help-Schaltfläche (Hilfe) mit einer kurzen Anleitung.
+- Rechtschreibprüfung auf Englisch, Spanisch, Portugiesisch, Französisch und Deutsch: falsch geschriebene Wörter bekommen eine rote Wellenlinie, ein Rechtsklick schlägt Korrekturen vor oder nimmt das Wort in dein Wörterbuch auf. Code und Webadressen werden übersprungen. Sprache wählen oder ausschalten unter **Optionen → Rechtschreibung**.
 
 In [ROADMAP.md](ROADMAP.md) (auf Englisch) steht, was fertig ist und was als Nächstes kommt.
 
