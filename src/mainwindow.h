@@ -29,6 +29,9 @@ class ThemeManager;
 // The light_md window: buttons on top, writing pane on the left, preview on the right.
 class MainWindow : public QMainWindow
 {
+    // tests/tst_session.cpp checks where documents are reopened.
+    friend class TestSession;
+
 public:
     explicit MainWindow(ThemeManager *themes, const QString &initialFile = QString());
     bool loadFile(const QString &path);

@@ -70,7 +70,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: bash
         run: |
-          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DLIGHT_MD_TESTS=ON
           cmake --build build --parallel
           cmake --install build --prefix "$(pwd -W)/dist"
           cd dist && 7z a "../light_md-${VERSION}-windows-x64.zip" .
@@ -81,7 +81,7 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \n            -DLIGHT_MD_TESTS=ON
           cmake --build build --parallel
           cmake --install build --prefix "$PWD/dist"
           codesign --force --deep --sign - dist/light_md.app
@@ -94,8 +94,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libgl1-mesa-dev libxkbcommon-dev
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLIGHT_MD_TESTS=ON
           cmake --build build --parallel
+
+      # Unit tests (tests/), without a screen: they set QT_QPA_PLATFORM=offscreen.
+      - name: Test
+        shell: bash
+        run: ctest --test-dir build --output-on-failure
 
       - name: Upload package
         if: runner.os != 'Linux'
