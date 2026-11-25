@@ -132,6 +132,9 @@ public:
         connect(m_editor->document(), &QTextDocument::modificationChanged, this, [this](bool changed) {
             setWindowModified(changed);
             updateStatus();
+            // Back to the saved text (for example with Undo): a crash now must not offer undone edits.
+            if (!changed)
+                clearRecovery();
         });
 
         // Scrolling either pane moves the other to the same place, proportionally.
@@ -827,7 +830,9 @@ private:
 
     void setFilePath(const QString &path)
     {
-        m_filePath = path;
+        // Always absolute: a file given as "notes.md" on the command line must still mean the same
+        // file later, whatever folder light_md is started from (Save, Recent, crash recovery).
+        m_filePath = path.isEmpty() ? QString() : cleanPath(path);
         // Pictures written as "photo.png" are looked up next to the document.
         m_preview->setSearchPaths(path.isEmpty() ? QStringList() : QStringList{QFileInfo(path).absolutePath()});
         if (!path.isEmpty())
@@ -1068,8 +1073,16 @@ private:
             setEditMode(true);
         m_findInfo->clear();
         const QTextDocument::FindFlags flags = findFlags(backward);
-        if (m_editor->find(text, flags))
+        // A match moves the writing pane; the preview should follow it there, even if the user
+        // last scrolled the preview.
+        const auto followMatch = [this] {
+            m_previewLeads = false;
+            syncFromLeader();
+        };
+        if (m_editor->find(text, flags)) {
+            followMatch();
             return true;
+        }
         // Nothing more in this direction: continue from the other end of the document.
         const QTextCursor saved = m_editor->textCursor();
         QTextCursor cursor = saved;
@@ -1078,6 +1091,7 @@ private:
         if (m_editor->find(text, flags)) {
             m_findInfo->setText(backward ? QStringLiteral("Continued from the end")
                                          : QStringLiteral("Continued from the top"));
+            followMatch();
             return true;
         }
         m_editor->setTextCursor(saved);
@@ -1209,23 +1223,23 @@ private:
         m_recoveryLock->tryLock(0);
     }
 
-    void writeRecovery()
+    // Returns true when a complete copy of the unsaved text is on disk.
+    bool writeRecovery()
     {
         if (!m_editor->document()->isModified()) {
             clearRecovery();
-            return;
+            return false;
         }
         // The text first and the description last, so a description always points to a complete copy.
         QSaveFile text(recoveryFile(QStringLiteral(".md")));
         if (!text.open(QIODevice::WriteOnly) || text.write(m_editor->toPlainText().toUtf8()) < 0 || !text.commit())
-            return;
+            return false;
         const QJsonObject info{{QStringLiteral("path"), m_filePath},
                                {QStringLiteral("savedAt"), QDateTime::currentDateTime().toString(Qt::ISODate)}};
         QSaveFile json(recoveryFile(QStringLiteral(".json")));
-        if (json.open(QIODevice::WriteOnly)) {
-            json.write(QJsonDocument(info).toJson());
-            json.commit();
-        }
+        if (!json.open(QIODevice::WriteOnly) || json.write(QJsonDocument(info).toJson()) < 0)
+            return false;
+        return json.commit();
     }
 
     void clearRecovery()
@@ -1298,15 +1312,19 @@ private:
         box.setDefaultButton(restore);
         box.exec();
 
-        // Answered either way: the old copy is no longer needed.
-        QFile::remove(folder.filePath(bestId + QStringLiteral(".json")));
-        QFile::remove(folder.filePath(bestId + QStringLiteral(".md")));
-        bestLock.reset();
-        if (box.clickedButton() != restore)
+        const auto deleteOldCopy = [&] {
+            QFile::remove(folder.filePath(bestId + QStringLiteral(".json")));
+            QFile::remove(folder.filePath(bestId + QStringLiteral(".md")));
+        };
+        if (box.clickedButton() != restore) {
+            deleteOldCopy();
             return;
+        }
+        // From here on, any early return keeps the old copy (only its lock is released by
+        // bestLock going out of scope), so it is offered again on the next start.
 
         // Open the original document first, so Save writes back to it.
-        if (!path.isEmpty() && QFileInfo::exists(path) && cleanPath(path) != cleanPath(m_filePath)) {
+        if (!path.isEmpty() && QFileInfo::exists(path) && cleanPath(path) != m_filePath) {
             if (!askSaveIfModified() || !loadFile(path))
                 return;
         } else if (path.isEmpty() && !m_filePath.isEmpty()) {
@@ -1324,6 +1342,12 @@ private:
         cursor.insertText(text);
         m_editor->document()->setModified(true);
         updatePreview();
+        // Only drop the old copy once this window holds its own copy on disk, so a second crash
+        // right now still loses nothing.
+        if (writeRecovery()) {
+            m_autosaveTimer.stop();
+            deleteOldCopy();
+        }
         m_status->setText(QStringLiteral("Unsaved changes restored. Save to keep them."));
     }
 
