@@ -18,6 +18,8 @@
 #include <QTextDocument>
 #include <QTimer>
 
+#include <filesystem>
+
 DocumentTab *MainWindow::addTab()
 {
     auto owned = std::make_unique<DocumentTab>();
@@ -156,7 +158,18 @@ int MainWindow::indexOfFile(const QString &path) const
         return -1;
     const QString clean = cleanPath(path);
     for (int i = 0; i < int(m_tabs.size()); ++i) {
-        if (m_tabs[i]->filePath.compare(clean, Qt::CaseInsensitive) == 0)
+        if (m_tabs[i]->filePath == clean)
+            return i;
+    }
+    // Another spelling of the same file: different case on Windows and macOS, a link, ...
+    // Asking the filesystem keeps Notes.md and notes.md apart where they are two files.
+    if (!QFileInfo::exists(clean))
+        return -1;
+    const std::filesystem::path wanted = QFileInfo(clean).filesystemFilePath();
+    for (int i = 0; i < int(m_tabs.size()); ++i) {
+        const QString open = m_tabs[i]->filePath;
+        std::error_code error;
+        if (!open.isEmpty() && std::filesystem::equivalent(QFileInfo(open).filesystemFilePath(), wanted, error))
             return i;
     }
     return -1;

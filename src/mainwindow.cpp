@@ -232,7 +232,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
         if (!m_tabs[i]->editor->document()->isModified())
             continue;
         switchToTab(i);
-        if (!askSaveIfModified()) {
+        if (!askSaveIfModified(m_tabs[i].get())) {
             event->ignore();
             return;
         }
@@ -966,14 +966,16 @@ void MainWindow::pasteImage(const QImage &image)
     }
     if (!m_editMode)
         setEditMode(true);
-    m_editor->textCursor().insertText(QStringLiteral("![](%1)").arg(relative));
+    m_editor->textCursor().insertText(QStringLiteral("![Pasted picture](%1)").arg(relative));
     m_editor->setFocus();
     m_status->setText(QStringLiteral("Picture saved as %1").arg(QDir::toNativeSeparators(relative)));
 }
 
-bool MainWindow::askSaveIfModified()
+// Asks about `tab`'s unsaved changes and saves it if the user says so. A document opened while
+// the question is up (from Finder, say) switches tabs, so this goes back to `tab` before saving.
+bool MainWindow::askSaveIfModified(DocumentTab *tab)
 {
-    if (!m_editor->document()->isModified())
+    if (!tab->editor->document()->isModified())
         return true;
     QMessageBox box(QMessageBox::Question, QStringLiteral("Save changes"),
                     QStringLiteral("You have unsaved changes. Do you want to save them?"),
@@ -985,8 +987,13 @@ bool MainWindow::askSaveIfModified()
     const int answer = box.exec();
     if (answer == QMessageBox::Cancel)
         return false;
-    if (answer == QMessageBox::Save)
+    if (answer == QMessageBox::Save) {
+        const int index = indexOf(tab);
+        if (index < 0)
+            return false;
+        switchToTab(index);
         return saveDocument();
+    }
     return true;
 }
 
@@ -1005,7 +1012,11 @@ bool MainWindow::closeTab(int index)
         return false;
     if (tab->editor->document()->isModified()) {
         switchToTab(index);
-        if (!askSaveIfModified())
+        if (!askSaveIfModified(tab))
+            return false;
+        // Tabs opened meanwhile go at the end, but look it up again rather than trust that.
+        index = indexOf(tab);
+        if (index < 0)
             return false;
     }
     rememberPosition(tab);
@@ -1081,14 +1092,32 @@ QString MainWindow::suggestedPath(const QString &extension) const
 
 bool MainWindow::saveDocumentAs()
 {
-    QString path = QFileDialog::getSaveFileName(
-        this, QStringLiteral("Save as"), suggestedPath(QStringLiteral(".md")),
-        QStringLiteral("Markdown documents (*.md);;All files (*)"));
-    if (path.isEmpty())
-        return false;
-    if (QFileInfo(path).suffix().isEmpty())
-        path += QStringLiteral(".md");
-    return writeTo(path);
+    DocumentTab *tab = currentTab();
+    QString start = suggestedPath(QStringLiteral(".md"));
+    for (;;) {
+        QString path = QFileDialog::getSaveFileName(
+            this, QStringLiteral("Save as"), start,
+            QStringLiteral("Markdown documents (*.md);;All files (*)"));
+        if (path.isEmpty())
+            return false;
+        if (QFileInfo(path).suffix().isEmpty())
+            path += QStringLiteral(".md");
+        // The dialog lets documents open meanwhile (from Finder, say); save the tab that asked.
+        const int index = indexOf(tab);
+        if (index < 0)
+            return false;
+        switchToTab(index);
+        // Two tabs on one file would overwrite each other's work on every save.
+        if (const int owner = indexOfFile(path); owner >= 0 && tabAt(owner) != tab) {
+            QMessageBox::warning(this, QStringLiteral("Document already open"),
+                                 QStringLiteral("This document is open in another tab:\n%1\n\n"
+                                                "Choose a different name, or close that tab first.")
+                                     .arg(QDir::toNativeSeparators(path)));
+            start = path;
+            continue;
+        }
+        return writeTo(path);
+    }
 }
 
 void MainWindow::exportPdf()
