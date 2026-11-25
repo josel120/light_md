@@ -2,7 +2,10 @@
 #include "mainwindow.h"
 
 #include <QAbstractButton>
+#include <QCoreApplication>
 #include <QDesktopServices>
+#include <QDir>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -14,11 +17,20 @@
 #include <QUrl>
 #include <QVersionNumber>
 
+#ifdef Q_OS_WIN
+// Installed with the Windows installer (packaging/windows/light_md.iss), which leaves this file
+// next to the program, rather than unzipped by hand.
+static bool installedWithSetup()
+{
+    return QFileInfo::exists(QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("light_md-installed")));
+}
+#endif
+
 // The release file for this system, matched by the end of its name; empty when there is none.
 QString MainWindow::platformDownloadSuffix()
 {
 #if defined(Q_OS_WIN)
-    return QStringLiteral("-windows-x64.zip");
+    return installedWithSetup() ? QStringLiteral("-windows-x64-setup.exe") : QStringLiteral("-windows-x64.zip");
 #elif defined(Q_OS_MACOS)
     return QStringLiteral("-macos.zip");
 #else
@@ -29,6 +41,9 @@ QString MainWindow::platformDownloadSuffix()
 QString MainWindow::installSteps()
 {
 #if defined(Q_OS_WIN)
+    if (installedWithSetup())
+        return tr("When the download finishes, open it: it replaces the installed light_md. "
+                  "Your documents are not affected.");
     return tr("When the download finishes, close light_md, unzip the file and replace the old "
                           "light_md folder with the new one. Your documents are not affected.");
 #elif defined(Q_OS_MACOS)
