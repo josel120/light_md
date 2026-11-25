@@ -10,9 +10,17 @@ qt_standard_project_setup()
 
 qt_add_executable(light_md
     src/editor.h
+    src/findbar.cpp
+    src/findbar.h
+    src/formatting.cpp
+    src/formatting.h
     src/highlighter.cpp
     src/highlighter.h
     src/main.cpp
+    src/mainwindow.cpp
+    src/mainwindow.h
+    src/session.cpp
+    src/updates.cpp
     src/theme.cpp
     src/theme.h
 )
