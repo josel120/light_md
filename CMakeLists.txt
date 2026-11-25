@@ -8,7 +8,8 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets PrintSupport Network)
 
 qt_standard_project_setup()
 
-qt_add_executable(light_md
+# Everything except main() lives in a small library, so the unit tests can use it too.
+qt_add_library(light_md_core STATIC
     src/editor.h
     src/findbar.cpp
     src/findbar.h
@@ -16,13 +17,19 @@ qt_add_executable(light_md
     src/formatting.h
     src/highlighter.cpp
     src/highlighter.h
-    src/main.cpp
     src/mainwindow.cpp
     src/mainwindow.h
     src/session.cpp
-    src/updates.cpp
     src/theme.cpp
     src/theme.h
+    src/updates.cpp
+)
+target_include_directories(light_md_core PUBLIC src)
+target_link_libraries(light_md_core PUBLIC Qt6::Widgets Qt6::PrintSupport Qt6::Network)
+target_compile_definitions(light_md_core PUBLIC LIGHT_MD_VERSION="${PROJECT_VERSION}")
+
+qt_add_executable(light_md
+    src/main.cpp
 )
 
 # The icon shown on the window (Qt resource) and on the .exe in File Explorer (Windows resource).
@@ -48,14 +55,19 @@ if(APPLE)
     )
 endif()
 
-target_include_directories(light_md PRIVATE src)
-target_link_libraries(light_md PRIVATE Qt6::Widgets Qt6::PrintSupport Qt6::Network)
-target_compile_definitions(light_md PRIVATE LIGHT_MD_VERSION="${PROJECT_VERSION}")
+target_link_libraries(light_md PRIVATE light_md_core)
 
 set_target_properties(light_md PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
 )
+
+# Unit tests (Qt Test): cmake -DLIGHT_MD_TESTS=ON, then ctest. See tests/.
+option(LIGHT_MD_TESTS "Build the unit tests" OFF)
+if(LIGHT_MD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
 
 # "cmake --install build --prefix dist" creates a folder ready to copy
 # to another computer, with the Qt libraries included where deploy supports it.

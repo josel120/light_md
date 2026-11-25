@@ -114,6 +114,16 @@ C:\Qt\Tools\CMake_64\bin\cmake.exe --install build --prefix dist
 
 Copy the whole `dist` folder and open `dist\bin\light_md.exe`.
 
+## Run the tests
+
+The formatting buttons, find and replace, the syntax highlighting and reopening a document where you left off have unit tests (Qt Test, in `tests/`). CI runs them on Windows, macOS and Linux for every push. To run them yourself, turn them on when configuring and use `ctest`:
+
+```
+cmake -S . -B build -DLIGHT_MD_TESTS=ON
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
 ## License
 
 MIT
