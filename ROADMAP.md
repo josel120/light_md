@@ -11,7 +11,7 @@ Order agreed on 2026-11-25, one at a time, one pull request each:
 
 1. [x] Syntax highlighting in the editor (#11)
 2. [x] Paste pictures from the clipboard (#12)
-3. [ ] Split `src/main.cpp` into smaller files (#19)
+3. [x] Split `src/main.cpp` into smaller files (#19)
 4. [ ] Automated tests for the formatting functions (#20)
 5. [ ] Tabs to keep several documents open (#13)
 6. [ ] Export to HTML (#14)
@@ -64,6 +64,7 @@ Need a person: testing on a real Mac (#22), signing with an Apple Developer ID (
 - [x] Autosave and recovery after a crash: a copy of unsaved changes is kept every few seconds, and offered back after a crash ([#10](https://github.com/josel120/light_md/issues/10))
 - [x] Syntax highlighting in the editor: bigger titles, bold, italic, links, code, lists, checklists and dimmed quotes, in the colors of the current theme ([#11](https://github.com/josel120/light_md/issues/11))
 - [x] Paste pictures from the clipboard (Ctrl+V): saved as PNG in an `images` folder next to the document; an unsaved document is saved first ([#12](https://github.com/josel120/light_md/issues/12))
+- [x] `src/main.cpp` split into smaller files: window, formatting, find bar, session and updates ([#19](https://github.com/josel120/light_md/issues/19))
 
 ## Next
 
@@ -80,7 +81,6 @@ Nothing queued; the items below are being worked through in the order listed und
 
 ## Engineering
 
-- [ ] Split `src/main.cpp` into smaller files (window, formatting actions, find bar) ([#19](https://github.com/josel120/light_md/issues/19))
 - [ ] Automated tests for the formatting functions (Qt Test) ([#20](https://github.com/josel120/light_md/issues/20))
 - [ ] Windows installer (Inno Setup or MSIX) that registers `.md` files ([#21](https://github.com/josel120/light_md/issues/21))
 - [ ] Test the macOS app on a real Mac (it is built in CI but nobody has tried it yet) ([#22](https://github.com/josel120/light_md/issues/22))
