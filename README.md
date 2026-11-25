@@ -21,6 +21,7 @@ Write on the left, see the formatted result on the right. Format with the button
 - Optional **Reader** mode (**Ctrl+E** / **Ctrl+R** / **Esc**) hides the writing pane; independent of the button bars.
 - Button visibility and the last Edit/Reader view are remembered across restarts and when opening another file.
 - **Options** menu in everyday words: New, Open, Save, Format, Theme, Help — every item has a shortcut.
+- The interface speaks English, Spanish, Portuguese, French and German. It follows your system language; change it in **Options → Language**.
 - Open and save `.md` documents, also by dragging them onto the window or using "Open with" from the file manager.
 - Keep several documents open in tabs (Ctrl+N new tab, Ctrl+W close, Ctrl+Tab / Ctrl+Shift+Tab to switch), each with its own undo history. light_md reopens your tabs the next time you start it.
 - Find and replace words (Ctrl+F, Ctrl+H), and reopen your latest documents from the Recent menu.
@@ -78,7 +79,7 @@ The macOS and Windows packages of each release are built automatically by GitHub
 Needs Qt 6 development packages (`Widgets`, `PrintSupport` and `Network`). On Arch / [Omarchy](https://omarchy.org/):
 
 ```bash
-sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-wayland
+sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-tools qt6-wayland
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ./build/light_md
@@ -126,6 +127,10 @@ cmake -S . -B build -DLIGHT_MD_TESTS=ON
 cmake --build build
 ctest --test-dir build --output-on-failure
 ```
+
+## Translations
+
+The interface texts live in `translations/light_md_<language>.ts` (Qt Linguist files). After adding or changing a text in the code, run `cmake --build build --target update_translations` to add it to every file, then fill in the translations (with Qt Linguist or any text editor). The next build includes them.
 
 ## License
 

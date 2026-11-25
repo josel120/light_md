@@ -23,6 +23,7 @@ Un éditeur Markdown léger en C++ et Qt 6, ouvert à tous les utilisateurs.
 - Collez une capture d'écran ou n'importe quelle image avec Ctrl+V : elle est enregistrée dans un dossier `images` à côté du document et apparaît dans l'aperçu et dans le PDF.
 - Export en PDF et impression : le résultat est identique au volet de droite.
 - Export en HTML (une seule page web avec les images incluses) ou en `.odt` pour Word, LibreOffice et Google Docs.
+- L'interface est en français, anglais, espagnol, portugais et allemand. Elle suit la langue du système ; changez-la dans **Options → Langue**.
 - Annuler et rétablir, plus des raccourcis clavier (Ctrl+S, Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+1, Ctrl+2).
 - Rouvre au démarrage le dernier document, exactement là où vous vous étiez arrêté (curseur et défilement), et retient cet endroit pour chaque document récent.
 - Texte plus grand ou plus petit dans les deux volets avec Ctrl + molette de la souris ou Ctrl+Plus / Ctrl+Moins (Ctrl+0 revient à la taille normale). La taille est mémorisée.
@@ -42,7 +43,7 @@ Voir [ROADMAP.md](ROADMAP.md) (en anglais) pour ce qui est fait et ce qui arrive
 Il faut Qt 6 (`Widgets` et `PrintSupport`). Sur Arch / [Omarchy](https://omarchy.org/) :
 
 ```bash
-sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-wayland
+sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-tools qt6-wayland
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ./build/light_md

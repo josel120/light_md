@@ -1,5 +1,6 @@
 #include "formatting.h"
 
+#include <QCoreApplication>
 #include <QPlainTextEdit>
 #include <QRegularExpression>
 #include <QTextBlock>
@@ -64,7 +65,7 @@ void wrapSelection(QPlainTextEdit *editor, const QString &marks)
         cursor.insertText(marks + selected + marks);
     } else {
         // Leave the sample word selected so the user can type over it.
-        const QString sample = QStringLiteral("text");
+        const QString sample = QCoreApplication::translate("Formatting", "text");
         cursor.insertText(marks + sample + marks);
         cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor, marks.size());
         cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, sample.size());
@@ -87,7 +88,7 @@ void insertLink(QPlainTextEdit *editor, const QString &address)
 {
     QTextCursor cursor = editor->textCursor();
     const bool hadSelection = cursor.hasSelection();
-    const QString label = hadSelection ? cursor.selectedText() : QStringLiteral("link text");
+    const QString label = hadSelection ? cursor.selectedText() : QCoreApplication::translate("Formatting", "link text");
     cursor.beginEditBlock();
     cursor.insertText(QStringLiteral("[%1](%2)").arg(label, address));
     cursor.endEditBlock();

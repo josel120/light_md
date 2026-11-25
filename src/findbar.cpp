@@ -15,22 +15,22 @@ FindBar::FindBar(QPlainTextEdit *editor, QWidget *parent)
     auto *layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     m_findEdit = new QLineEdit(this);
-    m_findEdit->setPlaceholderText(QStringLiteral("Word to find"));
+    m_findEdit->setPlaceholderText(tr("Word to find"));
     m_findEdit->setClearButtonEnabled(true);
-    auto *btnPrevious = new QPushButton(QStringLiteral("Previous"), this);
-    auto *btnNext = new QPushButton(QStringLiteral("Next"), this);
+    auto *btnPrevious = new QPushButton(tr("Previous"), this);
+    auto *btnNext = new QPushButton(tr("Next"), this);
     m_replaceEdit = new QLineEdit(this);
-    m_replaceEdit->setPlaceholderText(QStringLiteral("Replace with"));
+    m_replaceEdit->setPlaceholderText(tr("Replace with"));
     m_replaceEdit->setClearButtonEnabled(true);
-    auto *btnReplace = new QPushButton(QStringLiteral("Replace"), this);
-    auto *btnReplaceAll = new QPushButton(QStringLiteral("Replace all"), this);
-    m_matchCase = new QCheckBox(QStringLiteral("Match case"), this);
+    auto *btnReplace = new QPushButton(tr("Replace"), this);
+    auto *btnReplaceAll = new QPushButton(tr("Replace all"), this);
+    m_matchCase = new QCheckBox(tr("Match case"), this);
     m_info = new QLabel(this);
-    auto *btnClose = new QPushButton(QStringLiteral("Close"), this);
-    btnPrevious->setToolTip(QStringLiteral("Find the previous match (Shift+F3)"));
-    btnNext->setToolTip(QStringLiteral("Find the next match (Enter or F3)"));
-    btnClose->setToolTip(QStringLiteral("Hide the find bar (Esc)"));
-    layout->addWidget(new QLabel(QStringLiteral("Find:"), this));
+    auto *btnClose = new QPushButton(tr("Close"), this);
+    btnPrevious->setToolTip(tr("Find the previous match (Shift+F3)"));
+    btnNext->setToolTip(tr("Find the next match (Enter or F3)"));
+    btnClose->setToolTip(tr("Hide the find bar (Esc)"));
+    layout->addWidget(new QLabel(tr("Find:"), this));
     layout->addWidget(m_findEdit, 1);
     layout->addWidget(btnPrevious);
     layout->addWidget(btnNext);
@@ -111,13 +111,13 @@ bool FindBar::findNext(bool backward)
     cursor.movePosition(backward ? QTextCursor::End : QTextCursor::Start);
     m_editor->setTextCursor(cursor);
     if (m_editor->find(text, findFlags)) {
-        m_info->setText(backward ? QStringLiteral("Continued from the end") : QStringLiteral("Continued from the top"));
+        m_info->setText(backward ? tr("Continued from the end") : tr("Continued from the top"));
         if (matchFound)
             matchFound();
         return true;
     }
     m_editor->setTextCursor(saved);
-    m_info->setText(QStringLiteral("Not found"));
+    m_info->setText(tr("Not found"));
     return false;
 }
 
@@ -151,8 +151,8 @@ int FindBar::replaceAll()
         ++count;
     }
     edit.endEditBlock();
-    m_info->setText(count == 0 ? QStringLiteral("Not found")
-                    : count == 1 ? QStringLiteral("1 replacement")
-                                 : QStringLiteral("%1 replacements").arg(count));
+    m_info->setText(count == 0   ? tr("Not found")
+                    : count == 1 ? tr("1 replacement")
+                                 : tr("%1 replacements").arg(count));
     return count;
 }

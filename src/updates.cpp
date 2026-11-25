@@ -29,13 +29,13 @@ QString MainWindow::platformDownloadSuffix()
 QString MainWindow::installSteps()
 {
 #if defined(Q_OS_WIN)
-    return QStringLiteral("When the download finishes, close light_md, unzip the file and replace the old "
+    return tr("When the download finishes, close light_md, unzip the file and replace the old "
                           "light_md folder with the new one. Your documents are not affected.");
 #elif defined(Q_OS_MACOS)
-    return QStringLiteral("When the download finishes, close light_md, unzip the file and drag light_md "
+    return tr("When the download finishes, close light_md, unzip the file and drag light_md "
                           "to your Applications folder, replacing the old one.");
 #else
-    return QStringLiteral("Install the new version the same way you installed this one.");
+    return tr("Install the new version the same way you installed this one.");
 #endif
 }
 
@@ -49,7 +49,7 @@ void MainWindow::checkForUpdates()
                       QStringLiteral("light_md/%1").arg(QStringLiteral(LIGHT_MD_VERSION)));
     request.setRawHeader("Accept", "application/vnd.github+json");
     request.setTransferTimeout(15000);
-    m_status->setText(QStringLiteral("Checking for updates..."));
+    m_status->setText(tr("Checking for updates..."));
     m_updateReply = m_network.get(request);
     connect(m_updateReply, &QNetworkReply::finished, this, [this] { showUpdateResult(); });
 }
@@ -60,10 +60,10 @@ void MainWindow::showUpdateResult()
     m_updateReply = nullptr;
     reply->deleteLater();
     updateStatus();
-    const QString title = QStringLiteral("Check for updates");
+    const QString title = tr("Check for updates");
     if (reply->error() != QNetworkReply::NoError) {
         QMessageBox::warning(this, title,
-                             QStringLiteral("Could not check for updates. Please check your internet "
+                             tr("Could not check for updates. Please check your internet "
                                             "connection and try again.\n\n(%1)")
                                  .arg(reply->errorString()));
         return;
@@ -75,12 +75,12 @@ void MainWindow::showUpdateResult()
     const QVersionNumber latest = QVersionNumber::fromString(tag);
     const QVersionNumber current = QVersionNumber::fromString(QStringLiteral(LIGHT_MD_VERSION));
     if (latest.isNull()) {
-        QMessageBox::warning(this, title, QStringLiteral("Could not read the latest version from GitHub."));
+        QMessageBox::warning(this, title, tr("Could not read the latest version from GitHub."));
         return;
     }
     if (QVersionNumber::compare(latest, current) <= 0) {
         QMessageBox::information(this, title,
-                                 QStringLiteral("You have the latest version of light_md (%1).")
+                                 tr("You have the latest version of light_md (%1).")
                                      .arg(current.toString()));
         return;
     }
@@ -97,14 +97,14 @@ void MainWindow::showUpdateResult()
         }
     }
 
-    QMessageBox box(QMessageBox::Information, QStringLiteral("Update available"),
-                    QStringLiteral("light_md %1 is available. You have version %2.")
+    QMessageBox box(QMessageBox::Information, tr("Update available"),
+                    tr("light_md %1 is available. You have version %2.")
                         .arg(latest.toString(), current.toString()),
                     QMessageBox::NoButton, this);
     box.setInformativeText(installSteps());
-    QPushButton *btnDownload = box.addButton(QStringLiteral("Download"), QMessageBox::AcceptRole);
-    QPushButton *btnNews = box.addButton(QStringLiteral("What's new"), QMessageBox::HelpRole);
-    box.addButton(QStringLiteral("Not now"), QMessageBox::RejectRole);
+    QPushButton *btnDownload = box.addButton(tr("Download"), QMessageBox::AcceptRole);
+    QPushButton *btnNews = box.addButton(tr("What's new"), QMessageBox::HelpRole);
+    box.addButton(tr("Not now"), QMessageBox::RejectRole);
     box.setDefaultButton(btnDownload);
     box.exec();
     if (box.clickedButton() == btnDownload)

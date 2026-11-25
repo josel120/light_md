@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
 #include <QLockFile>
@@ -48,6 +49,7 @@ struct DocumentTab
 // The light_md window: buttons on top, tabs, writing pane on the left, preview on the right.
 class MainWindow : public QMainWindow
 {
+    Q_DECLARE_TR_FUNCTIONS(MainWindow)
     // tests/tst_session.cpp checks where documents are reopened.
     friend class TestSession;
 

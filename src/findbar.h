@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QCoreApplication>
 #include <QTextDocument>
 #include <QWidget>
 #include <functional>
@@ -12,6 +13,7 @@ class QPlainTextEdit;
 // The find and replace bar under the panes. Hidden until the user asks for it.
 class FindBar : public QWidget
 {
+    Q_DECLARE_TR_FUNCTIONS(FindBar)
 public:
     FindBar(QPlainTextEdit *editor, QWidget *parent);
 

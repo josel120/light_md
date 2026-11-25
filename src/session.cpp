@@ -203,12 +203,12 @@ void MainWindow::offerRecovery()
 
     const auto nameOf = [](const LeftBehind &copy) {
         const QString path = copy.info.value(QStringLiteral("path")).toString();
-        return path.isEmpty() ? QStringLiteral("a new document") : QFileInfo(path).fileName();
+        return path.isEmpty() ? tr("a new document") : QFileInfo(path).fileName();
     };
     QString question;
     if (copies.size() == 1) {
         const QDateTime time = QDateTime::fromString(savedAt(copies.front()), Qt::ISODate);
-        question = QStringLiteral("light_md closed unexpectedly while you had unsaved changes in <b>%1</b>.<br>"
+        question = tr("light_md closed unexpectedly while you had unsaved changes in <b>%1</b>.<br>"
                                   "A copy was kept automatically at %2.<br><br>"
                                   "Do you want to get those changes back?")
                        .arg(nameOf(copies.front()).toHtmlEscaped(),
@@ -217,16 +217,16 @@ void MainWindow::offerRecovery()
         QStringList names;
         for (const LeftBehind &copy : copies)
             names.append(QStringLiteral("<b>%1</b>").arg(nameOf(copy).toHtmlEscaped()));
-        question = QStringLiteral("light_md closed unexpectedly while you had unsaved changes in %1 documents: "
+        question = tr("light_md closed unexpectedly while you had unsaved changes in %1 documents: "
                                   "%2.<br>Copies were kept automatically.<br><br>"
                                   "Do you want to get those changes back? Each one opens in its own tab.")
                        .arg(copies.size())
                        .arg(names.join(QStringLiteral(", ")));
     }
-    QMessageBox box(QMessageBox::Question, QStringLiteral("Restore unsaved changes?"), question,
+    QMessageBox box(QMessageBox::Question, tr("Restore unsaved changes?"), question,
                     QMessageBox::NoButton, this);
-    QPushButton *restore = box.addButton(QStringLiteral("Restore"), QMessageBox::AcceptRole);
-    box.addButton(QStringLiteral("Discard"), QMessageBox::RejectRole);
+    QPushButton *restore = box.addButton(tr("Restore"), QMessageBox::AcceptRole);
+    box.addButton(tr("Discard"), QMessageBox::RejectRole);
     box.setDefaultButton(restore);
     box.exec();
 
@@ -271,7 +271,7 @@ void MainWindow::offerRecovery()
             deleteOldCopy();
     }
     if (box.clickedButton() == restore)
-        m_status->setText(QStringLiteral("Unsaved changes restored. Save to keep them."));
+        m_status->setText(tr("Unsaved changes restored. Save to keep them."));
 }
 
 void MainWindow::addRecentFile(const QString &path)
@@ -290,7 +290,7 @@ void MainWindow::rebuildRecentMenu()
     m_recentMenu->clear();
     const QStringList files = recentFiles();
     if (files.isEmpty()) {
-        m_recentMenu->addAction(QStringLiteral("No recent documents yet"))->setEnabled(false);
+        m_recentMenu->addAction(tr("No recent documents yet"))->setEnabled(false);
         return;
     }
     for (const QString &file : files) {
@@ -299,14 +299,14 @@ void MainWindow::rebuildRecentMenu()
         connect(action, &QAction::triggered, this, [this, file] { openRecent(file); });
     }
     m_recentMenu->addSeparator();
-    m_recentMenu->addAction(QStringLiteral("Clear this list"), this, [] { setRecentFiles(QStringList()); });
+    m_recentMenu->addAction(tr("Clear this list"), this, [] { setRecentFiles(QStringList()); });
 }
 
 void MainWindow::openRecent(const QString &file)
 {
     if (!QFileInfo::exists(file)) {
-        QMessageBox::information(this, QStringLiteral("Document not found"),
-                                 QStringLiteral("This document was moved or deleted:\n%1\n\n"
+        QMessageBox::information(this, tr("Document not found"),
+                                 tr("This document was moved or deleted:\n%1\n\n"
                                                 "It has been removed from the list.")
                                      .arg(QDir::toNativeSeparators(file)));
         QStringList files = recentFiles();

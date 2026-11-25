@@ -164,8 +164,7 @@ MainWindow::MainWindow(ThemeManager *themes, const QString &initialFile)
 
     // Start with the welcome text; the first document opened below takes its place.
     switchToTab(indexOf(addTab()));
-    m_editor->setPlainText(QStringLiteral(
-        "# Welcome to light_md\n\n"
+    m_editor->setPlainText(tr("# Welcome to light_md\n\n"
         "Write on the **left** and see the result on the *right*.\n\n"
         "## Getting started\n\n"
         "- Use the buttons at the top to format your text\n"
@@ -206,8 +205,8 @@ bool MainWindow::loadFile(const QString &path)
     }
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, QStringLiteral("Could not open"),
-                             QStringLiteral("Could not read the file:\n%1").arg(path));
+        QMessageBox::warning(this, tr("Could not open"),
+                             tr("Could not read the file:\n%1").arg(path));
         return false;
     }
     if (!isSpare(currentTab()))
@@ -381,134 +380,134 @@ QPushButton *MainWindow::addBarButton(QHBoxLayout *bar, QAction *action)
 
 void MainWindow::buildMenus()
 {
-    auto *options = menuBar()->addMenu(QStringLiteral("&Options"));
+    auto *options = menuBar()->addMenu(tr("&Options"));
 
-    auto *actNew = addOption(options, QStringLiteral("&New"), QStringLiteral("Start a blank document in a new tab"),
+    auto *actNew = addOption(options, tr("&New"), tr("Start a blank document in a new tab"),
                              QKeySequence::New);
-    auto *actOpen = addOption(options, QStringLiteral("&Open..."), QStringLiteral("Open a saved document"),
+    auto *actOpen = addOption(options, tr("&Open..."), tr("Open a saved document"),
                               QKeySequence::Open);
-    m_recentMenu = options->addMenu(QStringLiteral("Open &recent"));
+    m_recentMenu = options->addMenu(tr("Open &recent"));
     m_recentMenu->setToolTipsVisible(true);
     connect(m_recentMenu, &QMenu::aboutToShow, this, [this] { rebuildRecentMenu(); });
-    auto *actSave = addOption(options, QStringLiteral("&Save"), QStringLiteral("Save your changes"),
+    auto *actSave = addOption(options, tr("&Save"), tr("Save your changes"),
                               QKeySequence::Save);
-    auto *actSaveAs = addOption(options, QStringLiteral("Save &as..."),
-                                QStringLiteral("Save a copy with a different name"),
+    auto *actSaveAs = addOption(options, tr("Save &as..."),
+                                tr("Save a copy with a different name"),
                                 QKeySequence::SaveAs);
-    auto *actCloseTab = addOption(options, QStringLiteral("&Close tab"), QStringLiteral("Close this document"),
+    auto *actCloseTab = addOption(options, tr("&Close tab"), tr("Close this document"),
                                   QKeySequence(QStringLiteral("Ctrl+W")));
-    auto *actNextTab = addOption(options, QStringLiteral("Next ta&b"), QStringLiteral("Go to the next open document"),
+    auto *actNextTab = addOption(options, tr("Next ta&b"), tr("Go to the next open document"),
                                  QKeySequence(QStringLiteral("Ctrl+Tab")));
-    auto *actPreviousTab = addOption(options, QStringLiteral("Previous tab"),
-                                     QStringLiteral("Go to the previous open document"),
+    auto *actPreviousTab = addOption(options, tr("Previous tab"),
+                                     tr("Go to the previous open document"),
                                      QKeySequence(QStringLiteral("Ctrl+Shift+Tab")));
     options->addSeparator();
-    auto *actPdf = addOption(options, QStringLiteral("Export to &PDF..."),
-                             QStringLiteral("Create a nicely formatted PDF to send or share"),
+    auto *actPdf = addOption(options, tr("Export to &PDF..."),
+                             tr("Create a nicely formatted PDF to send or share"),
                              QKeySequence(QStringLiteral("Ctrl+Shift+E")));
-    auto *actHtml = addOption(options, QStringLiteral("Export to &HTML..."),
-                              QStringLiteral("Create a web page that works on its own, pictures included"),
+    auto *actHtml = addOption(options, tr("Export to &HTML..."),
+                              tr("Create a web page that works on its own, pictures included"),
                               QKeySequence());
-    auto *actOdt = addOption(options, QStringLiteral("Export for &Word (.odt)..."),
-                             QStringLiteral("Create a document that opens in Word, LibreOffice or Google Docs"),
+    auto *actOdt = addOption(options, tr("Export for &Word (.odt)..."),
+                             tr("Create a document that opens in Word, LibreOffice or Google Docs"),
                              QKeySequence());
-    auto *actPrint = addOption(options, QStringLiteral("&Print..."), QStringLiteral("Print the document"),
+    auto *actPrint = addOption(options, tr("&Print..."), tr("Print the document"),
                                QKeySequence::Print);
     options->addSeparator();
 
-    auto *actFind = addOption(options, QStringLiteral("&Find..."),
-                              QStringLiteral("Find and replace words in the text"), QKeySequence::Find);
-    auto *actReplace = addOption(options, QStringLiteral("Re&place..."),
-                                 QStringLiteral("Replace a word with another one"), QKeySequence::Replace);
-    auto *actFindNext = addOption(options, QStringLiteral("Find ne&xt"),
-                                  QStringLiteral("Go to the next match"), QKeySequence::FindNext);
-    auto *actFindPrevious = addOption(options, QStringLiteral("Find pre&vious"),
-                                      QStringLiteral("Go to the previous match"), QKeySequence::FindPrevious);
+    auto *actFind = addOption(options, tr("&Find..."),
+                              tr("Find and replace words in the text"), QKeySequence::Find);
+    auto *actReplace = addOption(options, tr("Re&place..."),
+                                 tr("Replace a word with another one"), QKeySequence::Replace);
+    auto *actFindNext = addOption(options, tr("Find ne&xt"),
+                                  tr("Go to the next match"), QKeySequence::FindNext);
+    auto *actFindPrevious = addOption(options, tr("Find pre&vious"),
+                                      tr("Go to the previous match"), QKeySequence::FindPrevious);
     options->addSeparator();
 
-    m_editAction = addOption(options, QStringLiteral("&Edit document"),
-                             QStringLiteral("Show the writing pane"),
+    m_editAction = addOption(options, tr("&Edit document"),
+                             tr("Show the writing pane"),
                              QKeySequence(QStringLiteral("Ctrl+E")));
     m_editAction->setCheckable(true);
 
-    auto *actRead = addOption(options, QStringLiteral("&Read only"),
-                              QStringLiteral("Hide the writing pane and just read"),
+    auto *actRead = addOption(options, tr("&Read only"),
+                              tr("Hide the writing pane and just read"),
                               QKeySequence(QStringLiteral("Ctrl+R")));
 
-    m_showButtonsAction = addOption(options, QStringLiteral("Show &buttons"),
-                                    QStringLiteral("Show or hide the file and format button bars"),
+    m_showButtonsAction = addOption(options, tr("Show &buttons"),
+                                    tr("Show or hide the file and format button bars"),
                                     QKeySequence(QStringLiteral("Ctrl+Shift+B")));
     m_showButtonsAction->setCheckable(true);
     m_showButtonsAction->setChecked(true);
 
-    m_syncScrollAction = addOption(options, QStringLiteral("S&ync scrolling"),
-                                   QStringLiteral("Scroll the writing pane and the preview together"),
+    m_syncScrollAction = addOption(options, tr("S&ync scrolling"),
+                                   tr("Scroll the writing pane and the preview together"),
                                    QKeySequence());
     m_syncScrollAction->setCheckable(true);
     m_syncScrollAction->setChecked(true);
 
-    auto *textSizeMenu = options->addMenu(QStringLiteral("&Text size"));
-    auto *actBigger = addOption(textSizeMenu, QStringLiteral("&Bigger text"),
-                                QStringLiteral("Make the text bigger in both panes"), QKeySequence::ZoomIn);
+    auto *textSizeMenu = options->addMenu(tr("&Text size"));
+    auto *actBigger = addOption(textSizeMenu, tr("&Bigger text"),
+                                tr("Make the text bigger in both panes"), QKeySequence::ZoomIn);
     // Ctrl+= too, so it works without Shift on keyboards where + needs Shift.
     actBigger->setShortcuts({QKeySequence(QKeySequence::ZoomIn), QKeySequence(QStringLiteral("Ctrl+="))});
-    auto *actSmaller = addOption(textSizeMenu, QStringLiteral("&Smaller text"),
-                                 QStringLiteral("Make the text smaller in both panes"), QKeySequence::ZoomOut);
-    auto *actNormalSize = addOption(textSizeMenu, QStringLiteral("&Normal size"),
-                                    QStringLiteral("Go back to the normal text size"),
+    auto *actSmaller = addOption(textSizeMenu, tr("&Smaller text"),
+                                 tr("Make the text smaller in both panes"), QKeySequence::ZoomOut);
+    auto *actNormalSize = addOption(textSizeMenu, tr("&Normal size"),
+                                    tr("Go back to the normal text size"),
                                     QKeySequence(QStringLiteral("Ctrl+0")));
     connect(actBigger, &QAction::triggered, this, [this] { changeTextSize(1); });
     connect(actSmaller, &QAction::triggered, this, [this] { changeTextSize(-1); });
     connect(actNormalSize, &QAction::triggered, this, [this] { changeTextSize(-m_textSize); });
 
     options->addSeparator();
-    m_formatMenu = options->addMenu(QStringLiteral("&Format"));
-    auto *actUndo = addOption(m_formatMenu, QStringLiteral("&Undo"),
-                              QStringLiteral("Take back the last change"), QKeySequence::Undo);
-    auto *actRedo = addOption(m_formatMenu, QStringLiteral("&Redo"),
-                              QStringLiteral("Bring back the change you undid"), QKeySequence::Redo);
+    m_formatMenu = options->addMenu(tr("&Format"));
+    auto *actUndo = addOption(m_formatMenu, tr("&Undo"),
+                              tr("Take back the last change"), QKeySequence::Undo);
+    auto *actRedo = addOption(m_formatMenu, tr("&Redo"),
+                              tr("Bring back the change you undid"), QKeySequence::Redo);
     m_formatMenu->addSeparator();
-    auto *actTitle = addOption(m_formatMenu, QStringLiteral("&Big title"),
-                               QStringLiteral("Turn the line into a big title"),
+    auto *actTitle = addOption(m_formatMenu, tr("&Big title"),
+                               tr("Turn the line into a big title"),
                                QKeySequence(QStringLiteral("Ctrl+1")));
-    auto *actSubtitle = addOption(m_formatMenu, QStringLiteral("&Subtitle"),
-                                  QStringLiteral("Turn the line into a subtitle"),
+    auto *actSubtitle = addOption(m_formatMenu, tr("&Subtitle"),
+                                  tr("Turn the line into a subtitle"),
                                   QKeySequence(QStringLiteral("Ctrl+2")));
-    auto *actBold = addOption(m_formatMenu, QStringLiteral("B&old"),
-                              QStringLiteral("Make the selected text bold"), QKeySequence::Bold);
-    auto *actItalic = addOption(m_formatMenu, QStringLiteral("&Italic"),
-                                QStringLiteral("Make the selected text italic"), QKeySequence::Italic);
-    auto *actBullets = addOption(m_formatMenu, QStringLiteral("Bullet &list"),
-                                 QStringLiteral("Put a bullet in front of each selected line"),
+    auto *actBold = addOption(m_formatMenu, tr("B&old"),
+                              tr("Make the selected text bold"), QKeySequence::Bold);
+    auto *actItalic = addOption(m_formatMenu, tr("&Italic"),
+                                tr("Make the selected text italic"), QKeySequence::Italic);
+    auto *actBullets = addOption(m_formatMenu, tr("Bullet &list"),
+                                 tr("Put a bullet in front of each selected line"),
                                  QKeySequence(QStringLiteral("Ctrl+Shift+8")));
-    auto *actNumbered = addOption(m_formatMenu, QStringLiteral("&Numbered list"),
-                                  QStringLiteral("Number the selected lines: 1, 2, 3..."),
+    auto *actNumbered = addOption(m_formatMenu, tr("&Numbered list"),
+                                  tr("Number the selected lines: 1, 2, 3..."),
                                   QKeySequence(QStringLiteral("Ctrl+Shift+7")));
-    auto *actChecklist = addOption(m_formatMenu, QStringLiteral("&Checklist"),
-                                   QStringLiteral("Put a box to tick in front of each selected line"),
+    auto *actChecklist = addOption(m_formatMenu, tr("&Checklist"),
+                                   tr("Put a box to tick in front of each selected line"),
                                    QKeySequence(QStringLiteral("Ctrl+Shift+9")));
     // Ctrl+Shift+Q often means Quit on Linux desktops; use Period instead.
-    auto *actQuote = addOption(m_formatMenu, QStringLiteral("&Quote"),
-                               QStringLiteral("Mark the lines as a quote"),
+    auto *actQuote = addOption(m_formatMenu, tr("&Quote"),
+                               tr("Mark the lines as a quote"),
                                QKeySequence(QStringLiteral("Ctrl+Shift+.")));
-    auto *actLink = addOption(m_formatMenu, QStringLiteral("Lin&k"),
-                              QStringLiteral("Add a link to a web page"),
+    auto *actLink = addOption(m_formatMenu, tr("Lin&k"),
+                              tr("Add a link to a web page"),
                               QKeySequence(QStringLiteral("Ctrl+K")));
-    auto *insertMenu = m_formatMenu->addMenu(QStringLiteral("I&nsert"));
-    auto *actPicture = addOption(insertMenu, QStringLiteral("&Picture..."),
-                                 QStringLiteral("Add a picture from your computer"),
+    auto *insertMenu = m_formatMenu->addMenu(tr("I&nsert"));
+    auto *actPicture = addOption(insertMenu, tr("&Picture..."),
+                                 tr("Add a picture from your computer"),
                                  QKeySequence(QStringLiteral("Ctrl+Shift+P")));
-    auto *actTable = addOption(insertMenu, QStringLiteral("&Table"), QStringLiteral("Add a small table"),
+    auto *actTable = addOption(insertMenu, tr("&Table"), tr("Add a small table"),
                                QKeySequence(QStringLiteral("Ctrl+Shift+T")));
-    auto *actCode = addOption(insertMenu, QStringLiteral("&Code block"),
-                              QStringLiteral("Show text exactly as typed, for code or commands"),
+    auto *actCode = addOption(insertMenu, tr("&Code block"),
+                              tr("Show text exactly as typed, for code or commands"),
                               QKeySequence(QStringLiteral("Ctrl+Shift+C")));
-    auto *actSeparator = addOption(insertMenu, QStringLiteral("&Separator line"),
-                                   QStringLiteral("Add a horizontal line between sections"),
+    auto *actSeparator = addOption(insertMenu, tr("&Separator line"),
+                                   tr("Add a horizontal line between sections"),
                                    QKeySequence(QStringLiteral("Ctrl+Shift+L")));
 
     options->addSeparator();
-    auto *themeMenu = options->addMenu(QStringLiteral("&Theme"));
+    auto *themeMenu = options->addMenu(tr("&Theme"));
     auto *themeGroup = new QActionGroup(this);
     themeGroup->setExclusive(true);
     struct ThemeShortcut {
@@ -523,14 +522,14 @@ void MainWindow::buildMenus()
     };
     for (const ThemeShortcut &entry : themeShortcuts) {
         auto *action = addOption(themeMenu, ThemeManager::kindLabel(entry.kind),
-                                 QStringLiteral("Use the %1 theme").arg(ThemeManager::kindLabel(entry.kind)),
+                                 tr("Use the %1 theme").arg(ThemeManager::kindLabel(entry.kind)),
                                  QKeySequence(QString::fromLatin1(entry.keys)));
         action->setCheckable(true);
         action->setData(ThemeManager::kindToString(entry.kind));
         themeGroup->addAction(action);
         if (entry.kind == ThemeManager::Kind::Omarchy && !ThemeManager::omarchyAvailable()) {
             action->setEnabled(false);
-            action->setToolTip(QStringLiteral("Omarchy theme is only available on Omarchy Linux"));
+            action->setToolTip(tr("Omarchy theme is only available on Omarchy Linux"));
             action->setShortcut(QKeySequence());
         }
         if (entry.kind == m_themes->kind())
@@ -542,16 +541,37 @@ void MainWindow::buildMenus()
         });
     }
 
-    auto *actUpdates = addOption(options, QStringLiteral("Check for &updates..."),
-                                 QStringLiteral("See if a newer version of light_md is available"),
+    // Native names, so everyone can find their own language whatever the interface shows now.
+    auto *languageMenu = options->addMenu(tr("&Language"));
+    auto *languageGroup = new QActionGroup(this);
+    const QString currentLanguage = QSettings().value(QStringLiteral("language")).toString();
+    const QList<QPair<QString, QString>> languages{
+        {QString(), tr("Same as the system")},  {QStringLiteral("en"), QStringLiteral("English")},
+        {QStringLiteral("es"), QStringLiteral("Español")}, {QStringLiteral("pt"), QStringLiteral("Português")},
+        {QStringLiteral("fr"), QStringLiteral("Français")}, {QStringLiteral("de"), QStringLiteral("Deutsch")},
+    };
+    for (const auto &[code, label] : languages) {
+        QAction *action = languageMenu->addAction(label);
+        action->setCheckable(true);
+        action->setChecked(code == currentLanguage);
+        languageGroup->addAction(action);
+        connect(action, &QAction::triggered, this, [this, code] {
+            QSettings().setValue(QStringLiteral("language"), code);
+            QMessageBox::information(this, tr("Language"),
+                                     tr("light_md will use the new language the next time you open it."));
+        });
+    }
+
+    auto *actUpdates = addOption(options, tr("Check for &updates..."),
+                                 tr("See if a newer version of light_md is available"),
                                  QKeySequence());
-    auto *actHelp = addOption(options, QStringLiteral("&Help"), QStringLiteral("How to use light_md"),
+    auto *actHelp = addOption(options, tr("&Help"), tr("How to use light_md"),
                               QKeySequence::HelpContents);
 
     // Classic file bar (same order as origin/main).
     addBarButton(m_fileBarLayout, actNew);
     addBarButton(m_fileBarLayout, actOpen);
-    addMenuButton(m_fileBarLayout, QStringLiteral("Recent"), QStringLiteral("Open a document you used recently"),
+    addMenuButton(m_fileBarLayout, tr("Recent"), tr("Open a document you used recently"),
                   m_recentMenu);
     addBarButton(m_fileBarLayout, actSave);
     addBarButton(m_fileBarLayout, actSaveAs);
@@ -576,8 +596,8 @@ void MainWindow::buildMenus()
     addBarButton(m_formatBarLayout, actChecklist);
     addBarButton(m_formatBarLayout, actQuote);
     addBarButton(m_formatBarLayout, actLink);
-    addMenuButton(m_formatBarLayout, QStringLiteral("Insert"),
-                  QStringLiteral("Add a picture, a table, a code block or a separator line"), insertMenu);
+    addMenuButton(m_formatBarLayout, tr("Insert"),
+                  tr("Add a picture, a table, a code block or a separator line"), insertMenu);
     m_formatBarLayout->addStretch();
 
     connect(actNew, &QAction::triggered, this, [this] { newDocument(); });
@@ -627,10 +647,10 @@ void MainWindow::buildMenus()
             [this] { prefixLines([](int) { return QStringLiteral("- [ ] "); }); });
     connect(actPicture, &QAction::triggered, this, [this] { insertImage(); });
     connect(actTable, &QAction::triggered, this, [this] {
-        insertBlock(QStringLiteral("| Column 1 | Column 2 |\n"
+        insertBlock(tr("| Column 1 | Column 2 |\n"
                                    "| --- | --- |\n"
                                    "| Text | Text |"),
-                    QStringLiteral("Column 1"));
+                    tr("Column 1"));
     });
     connect(actCode, &QAction::triggered, this, [this] { insertCodeBlock(); });
     connect(actSeparator, &QAction::triggered, this, [this] { insertBlock(QStringLiteral("---")); });
@@ -814,24 +834,24 @@ void MainWindow::updateStatus()
     static const QRegularExpression spaces(QStringLiteral("\\s+"));
     const int words = m_editor->toPlainText().split(spaces, Qt::SkipEmptyParts).size();
     const bool modified = m_editor->document()->isModified();
-    const QString mode = m_editMode ? QStringLiteral("Editing") : QStringLiteral("Reading");
-    const QString chrome = m_showButtons ? QStringLiteral("Buttons") : QStringLiteral("Minimal");
+    const QString mode = m_editMode ? tr("Editing") : tr("Reading");
+    const QString chrome = m_showButtons ? tr("Buttons") : tr("Minimal");
     // Only mentioned when it differs from normal, so the status line stays short.
     const QString textSize =
         m_textSize == 0 ? QString()
-                        : QStringLiteral(" · Text %1%").arg(qRound(100.0 * (m_editorBaseSize + m_textSize)
+                        : tr(" · Text %1%").arg(qRound(100.0 * (m_editorBaseSize + m_textSize)
                                                                    / m_editorBaseSize));
-    m_status->setText(QStringLiteral("%1 · %2%3    Words: %4    File: %5%6")
+    m_status->setText(tr("%1 · %2%3    Words: %4    File: %5%6")
                           .arg(mode, chrome, textSize)
                           .arg(words)
-                          .arg(m_filePath.isEmpty() ? QStringLiteral("(not saved)")
+                          .arg(m_filePath.isEmpty() ? tr("(not saved)")
                                                     : QDir::toNativeSeparators(m_filePath))
-                          .arg(modified ? QStringLiteral("    (unsaved changes)") : QString()));
+                          .arg(modified ? tr("    (unsaved changes)") : QString()));
 }
 
 void MainWindow::updateTitle()
 {
-    const QString name = m_filePath.isEmpty() ? QStringLiteral("New document")
+    const QString name = m_filePath.isEmpty() ? tr("New document")
                                               : QFileInfo(m_filePath).fileName();
     setWindowTitle(QStringLiteral("%1[*] - light_md").arg(name));
 }
@@ -887,7 +907,7 @@ void MainWindow::insertLink()
     if (!m_editMode)
         setEditMode(true);
     bool ok = false;
-    const QString typed = QInputDialog::getText(this, QStringLiteral("Add link"), QStringLiteral("Web page address:"),
+    const QString typed = QInputDialog::getText(this, tr("Add link"), tr("Web page address:"),
                                                 QLineEdit::Normal, QStringLiteral("https://"), &ok);
     const QString address = Formatting::linkAddress(typed);
     if (ok && !address.isEmpty())
@@ -915,8 +935,8 @@ void MainWindow::insertImage()
 {
     const QString folder = m_filePath.isEmpty() ? lastFolder() : QFileInfo(m_filePath).absolutePath();
     const QString image = QFileDialog::getOpenFileName(
-        this, QStringLiteral("Choose a picture"), folder,
-        QStringLiteral("Pictures (*.png *.jpg *.jpeg *.gif *.bmp *.svg *.webp);;All files (*)"));
+        this, tr("Choose a picture"), folder,
+        tr("Pictures (*.png *.jpg *.jpeg *.gif *.bmp *.svg *.webp);;All files (*)"));
     if (image.isEmpty()) {
         m_editor->setFocus();
         return;
@@ -942,8 +962,8 @@ void MainWindow::pasteImage(const QImage &image)
 {
     if (m_filePath.isEmpty()) {
         const auto answer = QMessageBox::question(
-            this, QStringLiteral("Save the document first"),
-            QStringLiteral("Pasted pictures are kept in a folder next to the document, "
+            this, tr("Save the document first"),
+            tr("Pasted pictures are kept in a folder next to the document, "
                            "so the document needs to be saved first.\n\nSave it now?"),
             QMessageBox::Save | QMessageBox::Cancel, QMessageBox::Save);
         if (answer != QMessageBox::Save || !saveDocumentAs()) {
@@ -959,8 +979,8 @@ void MainWindow::pasteImage(const QImage &image)
         name = QStringLiteral("picture-%1-%2.png").arg(stamp).arg(n);
     const QString relative = subfolder + QLatin1Char('/') + name;
     if (!folder.mkpath(subfolder) || !image.save(folder.filePath(relative), "PNG")) {
-        QMessageBox::warning(this, QStringLiteral("Could not paste the picture"),
-                             QStringLiteral("Could not save the picture in:\n%1")
+        QMessageBox::warning(this, tr("Could not paste the picture"),
+                             tr("Could not save the picture in:\n%1")
                                  .arg(QDir::toNativeSeparators(folder.filePath(subfolder))));
         return;
     }
@@ -968,19 +988,19 @@ void MainWindow::pasteImage(const QImage &image)
         setEditMode(true);
     m_editor->textCursor().insertText(QStringLiteral("![](%1)").arg(relative));
     m_editor->setFocus();
-    m_status->setText(QStringLiteral("Picture saved as %1").arg(QDir::toNativeSeparators(relative)));
+    m_status->setText(tr("Picture saved as %1").arg(QDir::toNativeSeparators(relative)));
 }
 
 bool MainWindow::askSaveIfModified()
 {
     if (!m_editor->document()->isModified())
         return true;
-    QMessageBox box(QMessageBox::Question, QStringLiteral("Save changes"),
-                    QStringLiteral("You have unsaved changes. Do you want to save them?"),
+    QMessageBox box(QMessageBox::Question, tr("Save changes"),
+                    tr("You have unsaved changes. Do you want to save them?"),
                     QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel, this);
-    box.button(QMessageBox::Save)->setText(QStringLiteral("Save"));
-    box.button(QMessageBox::Discard)->setText(QStringLiteral("Don't save"));
-    box.button(QMessageBox::Cancel)->setText(QStringLiteral("Cancel"));
+    box.button(QMessageBox::Save)->setText(tr("Save"));
+    box.button(QMessageBox::Discard)->setText(tr("Don't save"));
+    box.button(QMessageBox::Cancel)->setText(tr("Cancel"));
     box.setDefaultButton(QMessageBox::Save);
     const int answer = box.exec();
     if (answer == QMessageBox::Cancel)
@@ -1028,8 +1048,8 @@ bool MainWindow::closeTab(int index)
 void MainWindow::openDocument()
 {
     const QStringList paths = QFileDialog::getOpenFileNames(
-        this, QStringLiteral("Open document"), lastFolder(),
-        QStringLiteral("Markdown documents (*.md *.markdown *.txt);;All files (*)"));
+        this, tr("Open document"), lastFolder(),
+        tr("Markdown documents (*.md *.markdown *.txt);;All files (*)"));
     for (const QString &path : paths)
         loadFile(path);
 }
@@ -1041,20 +1061,20 @@ bool MainWindow::writeTo(const QString &path)
     // failed rename cannot delete both the old and new document.
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, QStringLiteral("Could not save"),
-                             QStringLiteral("Could not write to the file:\n%1").arg(path));
+        QMessageBox::warning(this, tr("Could not save"),
+                             tr("Could not write to the file:\n%1").arg(path));
         return false;
     }
     const QByteArray bytes = m_editor->toPlainText().toUtf8();
     if (file.write(bytes) != bytes.size()) {
         file.cancelWriting();
-        QMessageBox::warning(this, QStringLiteral("Could not save"),
-                             QStringLiteral("Could not write to the file:\n%1").arg(path));
+        QMessageBox::warning(this, tr("Could not save"),
+                             tr("Could not write to the file:\n%1").arg(path));
         return false;
     }
     if (!file.commit()) {
-        QMessageBox::warning(this, QStringLiteral("Could not save"),
-                             QStringLiteral("Could not finish saving:\n%1").arg(path));
+        QMessageBox::warning(this, tr("Could not save"),
+                             tr("Could not finish saving:\n%1").arg(path));
         return false;
     }
     m_editor->document()->setModified(false);
@@ -1082,8 +1102,8 @@ QString MainWindow::suggestedPath(const QString &extension) const
 bool MainWindow::saveDocumentAs()
 {
     QString path = QFileDialog::getSaveFileName(
-        this, QStringLiteral("Save as"), suggestedPath(QStringLiteral(".md")),
-        QStringLiteral("Markdown documents (*.md);;All files (*)"));
+        this, tr("Save as"), suggestedPath(QStringLiteral(".md")),
+        tr("Markdown documents (*.md);;All files (*)"));
     if (path.isEmpty())
         return false;
     if (QFileInfo(path).suffix().isEmpty())
@@ -1093,9 +1113,9 @@ bool MainWindow::saveDocumentAs()
 
 void MainWindow::exportPdf()
 {
-    QString path = QFileDialog::getSaveFileName(this, QStringLiteral("Export to PDF"),
+    QString path = QFileDialog::getSaveFileName(this, tr("Export to PDF"),
                                                 suggestedPath(QStringLiteral(".pdf")),
-                                                QStringLiteral("PDF document (*.pdf)"));
+                                                tr("PDF document (*.pdf)"));
     if (path.isEmpty())
         return;
     if (QFileInfo(path).suffix().compare(QStringLiteral("pdf"), Qt::CaseInsensitive) != 0)
@@ -1107,11 +1127,11 @@ void MainWindow::exportPdf()
     printer.setPageMargins(QMarginsF(20, 20, 20, 20), QPageLayout::Millimeter);
     m_preview->document()->print(&printer);
     if (!QFileInfo::exists(path)) {
-        QMessageBox::warning(this, QStringLiteral("Could not export"),
-                             QStringLiteral("Could not create the PDF:\n%1").arg(path));
+        QMessageBox::warning(this, tr("Could not export"),
+                             tr("Could not create the PDF:\n%1").arg(path));
         return;
     }
-    m_status->setText(QStringLiteral("PDF created: %1").arg(QDir::toNativeSeparators(path)));
+    m_status->setText(tr("PDF created: %1").arg(QDir::toNativeSeparators(path)));
 }
 
 // Asks where to export, adding `extension` when the name has none. Empty when cancelled.
@@ -1125,37 +1145,37 @@ QString MainWindow::exportPath(const QString &title, const QString &extension, c
 
 void MainWindow::exportHtml()
 {
-    const QString path = exportPath(QStringLiteral("Export to HTML"), QStringLiteral(".html"),
-                                    QStringLiteral("Web page (*.html *.htm)"));
+    const QString path = exportPath(tr("Export to HTML"), QStringLiteral(".html"),
+                                    tr("Web page (*.html *.htm)"));
     if (path.isEmpty())
         return;
-    const QString title = m_filePath.isEmpty() ? QStringLiteral("Document") : QFileInfo(m_filePath).completeBaseName();
+    const QString title = m_filePath.isEmpty() ? tr("Document") : QFileInfo(m_filePath).completeBaseName();
     const QString folder = m_filePath.isEmpty() ? QString() : QFileInfo(m_filePath).absolutePath();
     const QByteArray bytes = Export::standaloneHtml(m_editor->toPlainText(), title, folder).toUtf8();
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) {
-        QMessageBox::warning(this, QStringLiteral("Could not export"),
-                             QStringLiteral("Could not create the web page:\n%1").arg(path));
+        QMessageBox::warning(this, tr("Could not export"),
+                             tr("Could not create the web page:\n%1").arg(path));
         return;
     }
-    m_status->setText(QStringLiteral("Web page created: %1").arg(QDir::toNativeSeparators(path)));
+    m_status->setText(tr("Web page created: %1").arg(QDir::toNativeSeparators(path)));
 }
 
 // OpenDocument text: Word, LibreOffice and Google Docs all open it. Pictures come from the preview.
 void MainWindow::exportOdt()
 {
-    const QString path = exportPath(QStringLiteral("Export for Word"), QStringLiteral(".odt"),
-                                    QStringLiteral("OpenDocument text (*.odt)"));
+    const QString path = exportPath(tr("Export for Word"), QStringLiteral(".odt"),
+                                    tr("OpenDocument text (*.odt)"));
     if (path.isEmpty())
         return;
     updatePreview();
     QTextDocumentWriter writer(path, "odf");
     if (!writer.write(m_preview->document())) {
-        QMessageBox::warning(this, QStringLiteral("Could not export"),
-                             QStringLiteral("Could not create the document:\n%1").arg(path));
+        QMessageBox::warning(this, tr("Could not export"),
+                             tr("Could not create the document:\n%1").arg(path));
         return;
     }
-    m_status->setText(QStringLiteral("Document created: %1").arg(QDir::toNativeSeparators(path)));
+    m_status->setText(tr("Document created: %1").arg(QDir::toNativeSeparators(path)));
 }
 
 void MainWindow::printDocument()
@@ -1163,7 +1183,7 @@ void MainWindow::printDocument()
     updatePreview();
     QPrinter printer(QPrinter::HighResolution);
     QPrintDialog dialog(&printer, this);
-    dialog.setWindowTitle(QStringLiteral("Print"));
+    dialog.setWindowTitle(tr("Print"));
     if (dialog.exec() == QDialog::Accepted)
         m_preview->document()->print(&printer);
 }
@@ -1171,9 +1191,8 @@ void MainWindow::printDocument()
 void MainWindow::showHelp()
 {
     QMessageBox::information(
-        this, QStringLiteral("How to use light_md"),
-        QStringLiteral(
-            "<p>By default you get the <b>classic</b> layout: file and format buttons "
+        this, tr("How to use light_md"),
+        tr("<p>By default you get the <b>classic</b> layout: file and format buttons "
             "plus write + preview panes. Hide the buttons anytime for a minimal look. "
             "Your last button and Edit/Reader choices are remembered the next time you open "
             "the app or another file.</p>"

@@ -4,7 +4,7 @@ project(light_md VERSION 1.3.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets PrintSupport Network)
+find_package(Qt6 REQUIRED COMPONENTS Widgets PrintSupport Network LinguistTools)
 
 qt_standard_project_setup()
 
@@ -33,6 +33,17 @@ target_compile_definitions(light_md_core PUBLIC LIGHT_MD_VERSION="${PROJECT_VERS
 
 qt_add_executable(light_md
     src/main.cpp
+)
+
+# Interface translations (translations/*.ts), built into the app and loaded at startup by language.
+# After changing texts in the code, "cmake --build build --target update_translations" refreshes the .ts files.
+qt_add_translations(light_md
+    TS_FILES
+        translations/light_md_de.ts
+        translations/light_md_es.ts
+        translations/light_md_fr.ts
+        translations/light_md_pt.ts
+    RESOURCE_PREFIX "/i18n"
 )
 
 # The icon shown on the window (Qt resource) and on the .exe in File Explorer (Windows resource).

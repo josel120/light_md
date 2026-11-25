@@ -3,7 +3,10 @@
 
 #include <QApplication>
 #include <QIcon>
+#include <QLibraryInfo>
+#include <QLocale>
 #include <QSettings>
+#include <QTranslator>
 
 static ThemeManager::Kind loadInitialTheme()
 {
@@ -22,6 +25,20 @@ static ThemeManager::Kind loadInitialTheme()
     return ThemeManager::Kind::System;
 }
 
+// The interface language: the one picked in Options → Language, otherwise the system's first choice.
+static void installTranslations(QApplication &app)
+{
+    const QString chosen = QSettings().value(QStringLiteral("language")).toString();
+    const QLocale locale(chosen.isEmpty() ? QLocale::system().uiLanguages().value(0) : chosen);
+    auto *own = new QTranslator(&app);
+    if (own->load(locale, QStringLiteral("light_md"), QStringLiteral("_"), QStringLiteral(":/i18n")))
+        QApplication::installTranslator(own);
+    // Qt's own texts, such as the buttons of the file dialogs.
+    auto *qt = new QTranslator(&app);
+    if (qt->load(locale, QStringLiteral("qt"), QStringLiteral("_"), QLibraryInfo::path(QLibraryInfo::TranslationsPath)))
+        QApplication::installTranslator(qt);
+}
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
@@ -31,6 +48,8 @@ int main(int argc, char *argv[])
     // Matches light_md.desktop so Wayland/Omarchy pick up the launcher icon.
     QApplication::setDesktopFileName(QStringLiteral("light_md"));
     QApplication::setWindowIcon(QIcon(QStringLiteral(":/icons/light_md.png")));
+
+    installTranslations(app);
 
     ThemeManager themes;
     themes.setKind(loadInitialTheme());
