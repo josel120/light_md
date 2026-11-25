@@ -3,7 +3,6 @@
 #include <QFont>
 #include <QFontDatabase>
 #include <QRegularExpression>
-#include <QVector>
 
 namespace {
 
@@ -12,6 +11,27 @@ QColor mix(const QColor &a, const QColor &b, qreal amount)
     return QColor::fromRgbF(a.redF() + (b.redF() - a.redF()) * amount,
                             a.greenF() + (b.greenF() - a.greenF()) * amount,
                             a.blueF() + (b.blueF() - a.blueF()) * amount);
+}
+
+// Skips up to `maxDepth` quote markers ("> ") at the start of a line. Returns where the
+// rest of the line starts and puts the number of markers skipped in `depth`.
+int skipQuotes(const QString &text, int maxDepth, int *depth)
+{
+    int pos = 0;
+    *depth = 0;
+    while (*depth < maxDepth) {
+        int i = pos;
+        while (i < text.size() && i - pos < 3 && text.at(i) == QLatin1Char(' '))
+            ++i;
+        if (i >= text.size() || text.at(i) != QLatin1Char('>'))
+            break;
+        ++i;
+        if (i < text.size() && text.at(i).isSpace())
+            ++i;
+        pos = i;
+        ++*depth;
+    }
+    return pos;
 }
 
 } // namespace
@@ -102,9 +122,16 @@ void MarkdownHighlighter::mergeFormat(int start, int count, const QTextCharForma
     }
 }
 
+int MarkdownHighlighter::fenceState(QChar marker, int length, int quoteDepth)
+{
+    return (qMin(quoteDepth, 255) << 16) | (qMin(length, 0x7fff) << 1)
+        | (marker == QLatin1Char('~') ? 1 : 0);
+}
+
 void MarkdownHighlighter::highlightBlock(const QString &text)
 {
-    static const QRegularExpression fenceRe(QStringLiteral("^\\s{0,3}(`{3,}|~{3,})"));
+    static const QRegularExpression openFenceRe(QStringLiteral("^ {0,3}(`{3,}|~{3,})(.*)$"));
+    static const QRegularExpression closeFenceRe(QStringLiteral("^ {0,3}(`{3,}|~{3,})\\s*$"));
     static const QRegularExpression headingRe(QStringLiteral("^\\s{0,3}(#{1,6})(?:\\s+|$)"));
     static const QRegularExpression ruleRe(QStringLiteral("^\\s{0,3}([-*_])(?:\\s*\\1){2,}\\s*$"));
     static const QRegularExpression quoteRe(QStringLiteral("^\\s{0,3}(?:>\\s?)+"));
@@ -113,20 +140,37 @@ void MarkdownHighlighter::highlightBlock(const QString &text)
 
     // Code blocks: everything between ``` (or ~~~) lines is code, nothing inside is formatted.
     const int previous = previousBlockState();
-    const QRegularExpressionMatch fence = fenceRe.match(text);
-    if (previous == InBacktickFence || previous == InTildeFence) {
-        const bool closes = fence.hasMatch()
-            && fence.captured(1).at(0) == (previous == InBacktickFence ? QLatin1Char('`') : QLatin1Char('~'));
-        setFormat(0, text.size(), m_code);
-        if (closes)
-            mergeFormat(0, text.size(), m_marker);
-        setCurrentBlockState(closes ? Normal : previous);
-        return;
+    if (previous != Normal) {
+        const QChar marker = (previous & 1) ? QLatin1Char('~') : QLatin1Char('`');
+        const int length = (previous >> 1) & 0x7fff;
+        const int quoteDepth = previous >> 16;
+        int depth = 0;
+        const int contentStart = skipQuotes(text, quoteDepth, &depth);
+        // A code block inside a quote ends with the quote; then this is an ordinary line.
+        if (depth == quoteDepth) {
+            setFormat(0, contentStart, m_quote);
+            setFormat(contentStart, text.size() - contentStart, m_code);
+            // Closes only with the same symbol, at least as many of them, and nothing after.
+            const QRegularExpressionMatch close = closeFenceRe.match(text.mid(contentStart));
+            const bool closes = close.hasMatch() && close.captured(1).at(0) == marker
+                && close.capturedLength(1) >= length;
+            if (closes)
+                mergeFormat(contentStart, text.size() - contentStart, m_marker);
+            setCurrentBlockState(closes ? Normal : previous);
+            return;
+        }
     }
-    if (fence.hasMatch()) {
-        setFormat(0, text.size(), m_code);
-        mergeFormat(0, text.size(), m_marker);
-        setCurrentBlockState(fence.captured(1).at(0) == QLatin1Char('`') ? InBacktickFence : InTildeFence);
+
+    int quoteDepth = 0;
+    const int contentStart = skipQuotes(text, 255, &quoteDepth);
+    const QRegularExpressionMatch fence = openFenceRe.match(text.mid(contentStart));
+    const QChar marker = fence.hasMatch() ? fence.captured(1).at(0) : QChar();
+    // ```code``` at the start of a line is inline code, not a fence.
+    if (fence.hasMatch() && !(marker == QLatin1Char('`') && fence.captured(2).contains(marker))) {
+        setFormat(0, contentStart, m_quote);
+        setFormat(contentStart, text.size() - contentStart, m_code);
+        mergeFormat(contentStart, text.size() - contentStart, m_marker);
+        setCurrentBlockState(fenceState(marker, fence.capturedLength(1), quoteDepth));
         return;
     }
     setCurrentBlockState(Normal);
@@ -186,31 +230,24 @@ void MarkdownHighlighter::highlightInline(const QString &text, int from)
     if (!hasSymbols)
         return;
 
-    // Inside `code` nothing else counts, so remember where the code is.
-    QVector<QPair<int, int>> code;
-    auto insideCode = [&code](int start, int end) {
-        for (const auto &range : code) {
-            if (start < range.second && end > range.first)
-                return true;
-        }
-        return false;
-    };
-
+    // Symbols inside `code` don't count, but code can sit inside bold or a link. So the
+    // other rules look at a copy where each code span is blanked out with a neutral
+    // character: they can't start or end in it, yet can still wrap around it.
+    QString masked = text;
     auto codeIt = codeRe.globalMatch(text, from);
     while (codeIt.hasNext()) {
         const QRegularExpressionMatch m = codeIt.next();
         mergeFormat(m.capturedStart(0), m.capturedLength(0), m_code);
         mergeFormat(m.capturedStart(1), m.capturedLength(1), m_marker);
         mergeFormat(m.capturedEnd(2), m.capturedEnd(0) - m.capturedEnd(2), m_marker);
-        code.append({m.capturedStart(0), m.capturedEnd(0)});
+        for (int i = m.capturedStart(0); i < m.capturedEnd(0); ++i)
+            masked[i] = QChar(0xFFFC);
     }
 
     auto emphasis = [&](const QRegularExpression &re, const QTextCharFormat &format, int markerLength) {
-        auto it = re.globalMatch(text, from);
+        auto it = re.globalMatch(masked, from);
         while (it.hasNext()) {
             const QRegularExpressionMatch m = it.next();
-            if (insideCode(m.capturedStart(0), m.capturedEnd(0)))
-                continue;
             const int length = markerLength > 0 ? markerLength : m.capturedLength(1);
             mergeFormat(m.capturedStart(0), m.capturedLength(0), format);
             mergeFormat(m.capturedStart(0), length, m_marker);
@@ -223,18 +260,15 @@ void MarkdownHighlighter::highlightInline(const QString &text, int from)
     emphasis(strikeRe, m_strike, 2);
 
     // Links last, so their color wins over bold or italic around them.
-    auto linkIt = linkRe.globalMatch(text, from);
+    auto linkIt = linkRe.globalMatch(masked, from);
     while (linkIt.hasNext()) {
         const QRegularExpressionMatch m = linkIt.next();
-        if (insideCode(m.capturedStart(0), m.capturedEnd(0)))
-            continue;
         mergeFormat(m.capturedStart(0), m.capturedLength(0), m_marker);
         mergeFormat(m.capturedStart(1), m.capturedLength(1), m_linkText);
     }
-    auto autoIt = autoLinkRe.globalMatch(text, from);
+    auto autoIt = autoLinkRe.globalMatch(masked, from);
     while (autoIt.hasNext()) {
         const QRegularExpressionMatch m = autoIt.next();
-        if (!insideCode(m.capturedStart(0), m.capturedEnd(0)))
-            mergeFormat(m.capturedStart(0), m.capturedLength(0), m_linkText);
+        mergeFormat(m.capturedStart(0), m.capturedLength(0), m_linkText);
     }
 }

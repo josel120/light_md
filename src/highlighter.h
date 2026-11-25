@@ -21,11 +21,12 @@ protected:
     void highlightBlock(const QString &text) override;
 
 private:
-    enum State {
-        Normal = -1,
-        InBacktickFence = 1,
-        InTildeFence = 2,
-    };
+    // Outside a code block the state is Normal. Inside one it records the fence: ` or ~,
+    // how many of them opened it (a closing fence needs at least as many) and how many
+    // quote levels it sits in (the block ends when the quote does). Keeping all of that in
+    // the state means editing the opening fence re-colors the lines after it.
+    enum State { Normal = -1 };
+    static int fenceState(QChar marker, int length, int quoteDepth);
 
     void buildFormats();
     void mergeFormat(int start, int count, const QTextCharFormat &format);
