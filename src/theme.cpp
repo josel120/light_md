@@ -68,14 +68,14 @@ QString ThemeManager::kindLabel(Kind kind)
 {
     switch (kind) {
     case Kind::Omarchy:
-        return QStringLiteral("Omarchy");
+        return tr("Omarchy");
     case Kind::Minimal:
-        return QStringLiteral("Minimal");
+        return tr("Minimal");
     case Kind::Dark:
-        return QStringLiteral("Dark");
+        return tr("Dark");
     case Kind::System:
     default:
-        return QStringLiteral("System");
+        return tr("System");
     }
 }
 

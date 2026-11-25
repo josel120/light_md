@@ -27,7 +27,7 @@ DocumentTab *MainWindow::addTab()
     auto *editor = new MarkdownEditor(m_editors);
     tab->editor = editor;
     editor->pasteImage = [this](const QImage &image) { pasteImage(image); };
-    editor->setPlaceholderText(QStringLiteral("Type your text here..."));
+    editor->setPlaceholderText(tr("Type your text here..."));
     editor->setUndoRedoEnabled(true);
     editor->viewport()->installEventFilter(this);
     // Watched for palette changes, so the highlighting follows every theme switch.
@@ -180,7 +180,7 @@ void MainWindow::updateTabText(DocumentTab *tab)
     const int index = indexOf(tab);
     if (index < 0 || index >= m_tabBar->count())
         return;
-    const QString name = tab->filePath.isEmpty() ? QStringLiteral("New document") : QFileInfo(tab->filePath).fileName();
+    const QString name = tab->filePath.isEmpty() ? tr("New document") : QFileInfo(tab->filePath).fileName();
     m_tabBar->setTabText(index, tab->editor->document()->isModified() ? name + QStringLiteral(" *") : name);
     m_tabBar->setTabToolTip(index, tab->filePath.isEmpty() ? name : QDir::toNativeSeparators(tab->filePath));
 }

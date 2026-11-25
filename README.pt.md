@@ -23,6 +23,7 @@ Escreva à esquerda e veja o resultado formatado à direita, na hora. Nunca usou
 - Cole uma captura de tela ou qualquer imagem com Ctrl+V: ela é salva numa pasta `images` ao lado do documento e aparece na pré-visualização e no PDF.
 - Exporta para PDF e imprime: o resultado fica igual ao painel da direita.
 - Exporta para HTML (uma única página web com as imagens dentro) ou para `.odt` para Word, LibreOffice e Google Docs.
+- A interface está em português, inglês, espanhol, francês e alemão. Ela segue o idioma do sistema; mude em **Opções → Idioma**.
 - Desfazer e refazer, além de atalhos de teclado (Ctrl+S, Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+1, Ctrl+2).
 - Ao abrir o app, volta ao último documento exatamente onde você parou (cursor e rolagem), e lembra esse ponto em cada documento recente.
 - Texto maior ou menor nos dois painéis com Ctrl + roda do mouse ou Ctrl+Mais / Ctrl+Menos (Ctrl+0 volta ao tamanho normal). O tamanho é lembrado.
@@ -42,7 +43,7 @@ Veja [ROADMAP.md](ROADMAP.md) (em inglês) para saber o que já está pronto e o
 É preciso ter o Qt 6 (`Widgets` e `PrintSupport`). No Arch / [Omarchy](https://omarchy.org/):
 
 ```bash
-sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-wayland
+sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-tools qt6-wayland
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ./build/light_md

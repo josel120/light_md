@@ -23,6 +23,7 @@ Links schreiben, rechts sofort das formatierte Ergebnis sehen. Neu bei Markdown?
 - Bildschirmfotos und andere Bilder mit Strg+V einfügen: Sie werden in einem Ordner `images` neben dem Dokument gespeichert und erscheinen in der Vorschau und im PDF.
 - Export als PDF und Drucken: Das Ergebnis sieht genauso aus wie der rechte Bereich.
 - Export als HTML (eine einzige Webseite mit den Bildern darin) oder als `.odt` für Word, LibreOffice und Google Docs.
+- Die Oberfläche gibt es auf Deutsch, Englisch, Spanisch, Portugiesisch und Französisch. Sie folgt der Systemsprache; ändern unter **Optionen → Sprache**.
 - Rückgängig und Wiederholen sowie Tastenkürzel (Strg+S, Strg+Z, Strg+B, Strg+I, Strg+K, Strg+1, Strg+2).
 - Öffnet beim Start das zuletzt geöffnete Dokument genau an der Stelle, an der du aufgehört hast (Cursor und Bildlauf), und merkt sich diese Stelle für jedes zuletzt verwendete Dokument.
 - Text in beiden Bereichen größer oder kleiner mit Strg + Mausrad oder Strg+Plus / Strg+Minus (Strg+0 stellt die normale Größe wieder her). Die Größe wird gespeichert.
@@ -42,7 +43,7 @@ In [ROADMAP.md](ROADMAP.md) (auf Englisch) steht, was fertig ist und was als Nä
 Benötigt wird Qt 6 (`Widgets` und `PrintSupport`). Unter Arch / [Omarchy](https://omarchy.org/):
 
 ```bash
-sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-wayland
+sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-tools qt6-wayland
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ./build/light_md
