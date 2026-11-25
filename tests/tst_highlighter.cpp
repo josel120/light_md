@@ -86,6 +86,61 @@ private slots:
         QVERIFY(!bold(2, 3));
     }
 
+    void shorterFenceInsideIsCode()
+    {
+        editor.setPlainText(QStringLiteral("````\n```\n**a**\n```\n````\n**bold**"));
+        QVERIFY(code(2, 2));
+        QVERIFY(!bold(2, 2));
+        QVERIFY(bold(5, 3));
+    }
+
+    void fenceWithTextAfterDoesNotClose()
+    {
+        editor.setPlainText(QStringLiteral("```\n``` not a fence\n**a**\n```\n**bold**"));
+        QVERIFY(!bold(2, 2));
+        QVERIFY(bold(4, 3));
+    }
+
+    void inlineCodeAtLineStartIsNotAFence()
+    {
+        editor.setPlainText(QStringLiteral("```x``` here\n**bold**"));
+        QVERIFY(bold(1, 3));
+    }
+
+    void lengtheningTheOpenerRecolorsBelow()
+    {
+        editor.setPlainText(QStringLiteral("```\n**a**\n```\n**b**"));
+        QVERIFY(bold(3, 2));
+        QTextCursor cursor(editor.document());
+        cursor.insertText(QStringLiteral("`"));
+        QVERIFY(!bold(3, 2));
+    }
+
+    void quotedCodeBlock()
+    {
+        editor.setPlainText(QStringLiteral("> ```\n> **a**\n> ```\n**bold**"));
+        QVERIFY(code(1, 4));
+        QVERIFY(!bold(1, 4));
+        QVERIFY(bold(3, 3));
+    }
+
+    void quotedCodeBlockEndsWithTheQuote()
+    {
+        editor.setPlainText(QStringLiteral("> ```\n> **a**\n**bold**"));
+        QVERIFY(!bold(1, 4));
+        QVERIFY(bold(2, 3));
+    }
+
+    void codeInsideBoldAndLinks()
+    {
+        editor.setPlainText(QStringLiteral("**Run `git status` first**\n[see `x` here](u)"));
+        QVERIFY(bold(0, 3));
+        QVERIFY(bold(0, 20));
+        QVERIFY(code(0, 9));
+        QVERIFY(formatAt(1, 2).fontUnderline());
+        QVERIFY(formatAt(1, 10).fontUnderline());
+    }
+
     void tickedChecklistIsCrossedOut()
     {
         editor.setPlainText(QStringLiteral("- [x] done\n- [ ] open"));
