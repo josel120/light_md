@@ -24,21 +24,28 @@
 #include <QTextCursor>
 #include <QTimer>
 #include <QUuid>
+#include <algorithm>
 
-// Saves where the current document was left: the cursor, and how far each pane was scrolled
-// (scrolling does not move the cursor, so the visible part can be elsewhere).
-void MainWindow::rememberPosition()
+// Saves where a document was left: the cursor, and how far each pane was scrolled (scrolling
+// does not move the cursor, so the visible part can be elsewhere).
+void MainWindow::rememberPosition(DocumentTab *tab)
 {
-    if (m_filePath.isEmpty())
+    if (!tab || tab->filePath.isEmpty())
         return;
+    const bool current = tab->editor == m_editor;
     QSettings settings;
     QVariantMap all = settings.value(QStringLiteral("session/positions")).toMap();
-    QVariantMap spot{{QStringLiteral("cursor"), m_editor->textCursor().position()},
-                     {QStringLiteral("scroll"), scrollRatio(m_preview->verticalScrollBar())}};
+    QVariantMap spot{{QStringLiteral("cursor"), tab->editor->textCursor().position()},
+                     {QStringLiteral("scroll"), current ? scrollRatio(m_preview->verticalScrollBar())
+                                                        : tab->previewScroll}};
     // A hidden writing pane (Reader mode) has a stale position; the reading pane is what counts then.
-    if (m_editor->isVisible())
-        spot.insert(QStringLiteral("editorScroll"), scrollRatio(m_editor->verticalScrollBar()));
-    all.insert(cleanPath(m_filePath), spot);
+    // A tab in the background keeps its own pane's position (or the one it was reopened with).
+    if (current ? tab->editor->isVisible() : m_editMode) {
+        const double editorScroll =
+            tab->pendingEditorScroll >= 0 ? tab->pendingEditorScroll : scrollRatio(tab->editor->verticalScrollBar());
+        spot.insert(QStringLiteral("editorScroll"), editorScroll);
+    }
+    all.insert(tab->filePath, spot);
     // Only documents still in the Recent list are worth remembering; this keeps the list short.
     const QStringList recent = recentFiles();
     for (auto it = all.begin(); it != all.end();) {
@@ -50,6 +57,7 @@ void MainWindow::rememberPosition()
     settings.setValue(QStringLiteral("session/positions"), all);
 }
 
+// Puts the current tab's document back where it was left.
 void MainWindow::restorePosition(const QString &path)
 {
     const QVariantMap saved =
@@ -64,7 +72,18 @@ void MainWindow::restorePosition(const QString &path)
     const bool hasEditorScroll = saved.contains(QStringLiteral("editorScroll"));
     const double editorScroll = saved.value(QStringLiteral("editorScroll")).toDouble();
     // Wait for the window to be laid out, so both panes know their height before scrolling.
-    QTimer::singleShot(0, this, [this, scroll, hasEditorScroll, editorScroll] {
+    DocumentTab *tab = currentTab();
+    MarkdownEditor *editor = m_editor;
+    QTimer::singleShot(0, this, [this, tab, editor, scroll, hasEditorScroll, editorScroll] {
+        if (indexOf(tab) < 0 || tab->editor != editor)
+            return;
+        // Reopened behind another tab: switchToTab scrolls it when it is first shown.
+        if (editor != m_editor) {
+            tab->previewScroll = scroll;
+            tab->previewLeads = !hasEditorScroll;
+            tab->pendingEditorScroll = hasEditorScroll ? editorScroll : -1;
+            return;
+        }
         QScrollBar *editorBar = m_editor->verticalScrollBar();
         QScrollBar *previewBar = m_preview->verticalScrollBar();
         if (m_editor->isVisible() && hasEditorScroll) {
@@ -83,69 +102,78 @@ void MainWindow::restorePosition(const QString &path)
     });
 }
 
-// Crash recovery. Each running window owns "<id>.md" (the text) and "<id>.json" (which document
-// it belongs to) in the app's data folder, plus "<id>.lock", held while the window is open.
-// A copy whose lock nobody holds was left behind by a crash.
+// Crash recovery. Each open tab owns "<id>.md" (the text) and "<id>.json" (which document it
+// belongs to) in the app's data folder, plus "<id>.lock", held while the tab is open. A copy
+// whose lock nobody holds was left behind by a crash.
 QString MainWindow::recoveryFolder()
 {
     return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
         .filePath(QStringLiteral("recovery"));
 }
 
-QString MainWindow::recoveryFile(const QString &extension) const
+QString MainWindow::recoveryFile(const QString &id, const QString &extension)
 {
-    return QDir(recoveryFolder()).filePath(m_recoveryId + extension);
+    return QDir(recoveryFolder()).filePath(id + extension);
 }
 
-void MainWindow::startRecovery()
+void MainWindow::startRecovery(DocumentTab *tab)
 {
     QDir().mkpath(recoveryFolder());
-    m_recoveryId = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    m_recoveryLock = std::make_unique<QLockFile>(recoveryFile(QStringLiteral(".lock")));
-    // 0 = only a dead process makes the lock stale, however long the window stays open.
-    m_recoveryLock->setStaleLockTime(0);
-    m_recoveryLock->tryLock(0);
+    tab->recoveryId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    tab->recoveryLock = std::make_unique<QLockFile>(recoveryFile(tab->recoveryId, QStringLiteral(".lock")));
+    // 0 = only a dead process makes the lock stale, however long the tab stays open.
+    tab->recoveryLock->setStaleLockTime(0);
+    tab->recoveryLock->tryLock(0);
 }
 
-// Returns true when a complete copy of the unsaved text is on disk.
-bool MainWindow::writeRecovery()
+// Returns true when a complete copy of the tab's unsaved text is on disk.
+bool MainWindow::writeRecovery(DocumentTab *tab)
 {
-    if (!m_editor->document()->isModified()) {
-        clearRecovery();
+    if (!tab->editor->document()->isModified()) {
+        clearRecovery(tab);
         return false;
     }
     // The text first and the description last, so a description always points to a complete copy.
-    QSaveFile text(recoveryFile(QStringLiteral(".md")));
-    if (!text.open(QIODevice::WriteOnly) || text.write(m_editor->toPlainText().toUtf8()) < 0 || !text.commit())
+    QSaveFile text(recoveryFile(tab->recoveryId, QStringLiteral(".md")));
+    if (!text.open(QIODevice::WriteOnly) || text.write(tab->editor->toPlainText().toUtf8()) < 0 || !text.commit())
         return false;
-    const QJsonObject info{{QStringLiteral("path"), m_filePath},
+    const QJsonObject info{{QStringLiteral("path"), tab->filePath},
                            {QStringLiteral("savedAt"), QDateTime::currentDateTime().toString(Qt::ISODate)}};
-    QSaveFile json(recoveryFile(QStringLiteral(".json")));
+    QSaveFile json(recoveryFile(tab->recoveryId, QStringLiteral(".json")));
     if (!json.open(QIODevice::WriteOnly) || json.write(QJsonDocument(info).toJson()) < 0)
         return false;
     return json.commit();
 }
 
-void MainWindow::clearRecovery()
+void MainWindow::clearRecovery(DocumentTab *tab)
 {
-    m_autosaveTimer.stop();
-    QFile::remove(recoveryFile(QStringLiteral(".json")));
-    QFile::remove(recoveryFile(QStringLiteral(".md")));
+    if (!tab)
+        return;
+    QFile::remove(recoveryFile(tab->recoveryId, QStringLiteral(".json")));
+    QFile::remove(recoveryFile(tab->recoveryId, QStringLiteral(".md")));
 }
 
-// Offers the newest copy left behind by a crashed window, if any.
+// Offers back the copies left behind by crashed windows, each in its own tab.
 void MainWindow::offerRecovery()
 {
     const QDir folder(recoveryFolder());
-    QString bestId;
-    QJsonObject bestInfo;
-    std::unique_ptr<QLockFile> bestLock;
+    QStringList ownIds;
+    for (const auto &tab : m_tabs)
+        ownIds.append(tab->recoveryId);
+
+    struct LeftBehind
+    {
+        QString id;
+        QJsonObject info;
+        std::unique_ptr<QLockFile> lock;
+    };
+    std::vector<LeftBehind> copies;
     const QStringList descriptions = folder.entryList({QStringLiteral("*.json")}, QDir::Files);
     for (const QString &name : descriptions) {
         const QString id = QFileInfo(name).completeBaseName();
-        if (id == m_recoveryId || !QFileInfo::exists(folder.filePath(id + QStringLiteral(".md"))))
+        if (ownIds.contains(id) || !QFileInfo::exists(folder.filePath(id + QStringLiteral(".md"))))
             continue;
-        // Locked = that window is still open (maybe a second light_md); leave its copy alone.
+        // Locked = that tab is still open (maybe in a second light_md); leave its copy alone.
         auto lock = std::make_unique<QLockFile>(folder.filePath(id + QStringLiteral(".lock")));
         lock->setStaleLockTime(0);
         if (!lock->tryLock(0))
@@ -153,86 +181,107 @@ void MainWindow::offerRecovery()
         QFile file(folder.filePath(name));
         if (!file.open(QIODevice::ReadOnly))
             continue;
-        const QJsonObject info = QJsonDocument::fromJson(file.readAll()).object();
-        if (bestId.isEmpty() || info.value(QStringLiteral("savedAt")).toString()
-                                    > bestInfo.value(QStringLiteral("savedAt")).toString()) {
-            bestId = id;
-            bestInfo = info;
-            bestLock = std::move(lock);
-        }
+        copies.push_back({id, QJsonDocument::fromJson(file.readAll()).object(), std::move(lock)});
     }
-    // A crashed window with nothing unsaved leaves only its lock behind; tidy those up.
+    // A crashed tab with nothing unsaved leaves only its lock behind; tidy those up.
     const QStringList locks = folder.entryList({QStringLiteral("*.lock")}, QDir::Files);
     for (const QString &name : locks) {
         const QString id = QFileInfo(name).completeBaseName();
-        if (id == m_recoveryId || id == bestId || QFileInfo::exists(folder.filePath(id + QStringLiteral(".json"))))
+        if (ownIds.contains(id) || QFileInfo::exists(folder.filePath(id + QStringLiteral(".json"))))
             continue;
         QLockFile stale(folder.filePath(name));
         stale.setStaleLockTime(0);
         if (stale.tryLock(0))
             stale.unlock(); // Unlocking removes the file.
     }
-    if (bestId.isEmpty())
+    if (copies.empty())
         return;
+    // Newest first: if two copies belong to the same document (two windows had it open), the
+    // newest is restored into that document and the others open as new documents.
+    const auto savedAt = [](const LeftBehind &copy) { return copy.info.value(QStringLiteral("savedAt")).toString(); };
+    std::sort(copies.begin(), copies.end(),
+              [&](const LeftBehind &a, const LeftBehind &b) { return savedAt(a) > savedAt(b); });
 
-    QFile textFile(folder.filePath(bestId + QStringLiteral(".md")));
-    if (!textFile.open(QIODevice::ReadOnly))
-        return;
-    const QString text = QString::fromUtf8(textFile.readAll());
-    textFile.close();
-    const QString path = bestInfo.value(QStringLiteral("path")).toString();
-    const QDateTime savedAt =
-        QDateTime::fromString(bestInfo.value(QStringLiteral("savedAt")).toString(), Qt::ISODate);
-    const QString name = path.isEmpty() ? QStringLiteral("a new document") : QFileInfo(path).fileName();
-
-    QMessageBox box(QMessageBox::Question, QStringLiteral("Restore unsaved changes?"),
-                    QStringLiteral("light_md closed unexpectedly while you had unsaved changes in <b>%1</b>.<br>"
-                                   "A copy was kept automatically at %2.<br><br>"
-                                   "Do you want to get those changes back?")
-                        .arg(name.toHtmlEscaped(), QLocale().toString(savedAt.time(), QLocale::ShortFormat)),
+    const auto nameOf = [](const LeftBehind &copy) {
+        const QString path = copy.info.value(QStringLiteral("path")).toString();
+        return path.isEmpty() ? QStringLiteral("a new document") : QFileInfo(path).fileName();
+    };
+    QString question;
+    if (copies.size() == 1) {
+        const QDateTime time = QDateTime::fromString(savedAt(copies.front()), Qt::ISODate);
+        question = QStringLiteral("light_md closed unexpectedly while you had unsaved changes in <b>%1</b>.<br>"
+                                  "A copy was kept automatically at %2.<br><br>"
+                                  "Do you want to get those changes back?")
+                       .arg(nameOf(copies.front()).toHtmlEscaped(),
+                            QLocale().toString(time.time(), QLocale::ShortFormat));
+    } else {
+        QStringList names;
+        for (const LeftBehind &copy : copies)
+            names.append(QStringLiteral("<b>%1</b>").arg(nameOf(copy).toHtmlEscaped()));
+        question = QStringLiteral("light_md closed unexpectedly while you had unsaved changes in %1 documents: "
+                                  "%2.<br>Copies were kept automatically.<br><br>"
+                                  "Do you want to get those changes back? Each one opens in its own tab.")
+                       .arg(copies.size())
+                       .arg(names.join(QStringLiteral(", ")));
+    }
+    QMessageBox box(QMessageBox::Question, QStringLiteral("Restore unsaved changes?"), question,
                     QMessageBox::NoButton, this);
     QPushButton *restore = box.addButton(QStringLiteral("Restore"), QMessageBox::AcceptRole);
     box.addButton(QStringLiteral("Discard"), QMessageBox::RejectRole);
     box.setDefaultButton(restore);
     box.exec();
 
-    const auto deleteOldCopy = [&] {
-        QFile::remove(folder.filePath(bestId + QStringLiteral(".json")));
-        QFile::remove(folder.filePath(bestId + QStringLiteral(".md")));
-    };
-    if (box.clickedButton() != restore) {
-        deleteOldCopy();
-        return;
-    }
-    // From here on, any early return keeps the old copy (only its lock is released by
-    // bestLock going out of scope), so it is offered again on the next start.
+    int extraCopies = 0;
+    for (const LeftBehind &copy : copies) {
+        const auto deleteOldCopy = [&] {
+            QFile::remove(folder.filePath(copy.id + QStringLiteral(".json")));
+            QFile::remove(folder.filePath(copy.id + QStringLiteral(".md")));
+        };
+        if (box.clickedButton() != restore) {
+            deleteOldCopy();
+            continue;
+        }
+        // From here on, a copy that cannot be restored is kept (only its lock is released when
+        // `copies` goes away), so it is offered again on the next start.
+        QFile textFile(folder.filePath(copy.id + QStringLiteral(".md")));
+        if (!textFile.open(QIODevice::ReadOnly))
+            continue;
+        const QString text = QString::fromUtf8(textFile.readAll());
+        textFile.close();
 
-    // Open the original document first, so Save writes back to it.
-    if (!path.isEmpty() && QFileInfo::exists(path) && cleanPath(path) != m_filePath) {
-        if (!askSaveIfModified() || !loadFile(path))
-            return;
-    } else if (path.isEmpty() && !m_filePath.isEmpty()) {
-        if (!askSaveIfModified())
-            return;
-        m_editor->clear();
-        setFilePath(QString());
-    } else if (!path.isEmpty() && !QFileInfo::exists(path)) {
-        // The original was moved or deleted; keep its name so Save recreates it there.
-        setFilePath(path);
+        // Open the original document first, so Save writes back to it. If a newer copy of it
+        // was just restored there, this one gets its own untitled tab and needs Save As.
+        const QString path = copy.info.value(QStringLiteral("path")).toString();
+        const int open = indexOfFile(path);
+        const bool taken = open >= 0 && tabAt(open)->editor->document()->isModified();
+        if (taken)
+            ++extraCopies;
+        if (!taken && !path.isEmpty() && QFileInfo::exists(path)) {
+            if (!loadFile(path))
+                continue;
+        } else {
+            if (!isSpare(currentTab()))
+                switchToTab(indexOf(addTab()));
+            // A moved or deleted original keeps its name, so Save recreates it there.
+            if (!taken && !path.isEmpty())
+                setFilePath(path);
+        }
+        // Replace through the cursor so the change can be undone (Ctrl+Z shows the saved version).
+        QTextCursor cursor(m_editor->document());
+        cursor.select(QTextCursor::Document);
+        cursor.insertText(text);
+        m_editor->document()->setModified(true);
+        updatePreview();
+        // Only drop the old copy once this tab holds its own copy on disk, so a second crash
+        // right now still loses nothing.
+        if (writeRecovery(currentTab()))
+            deleteOldCopy();
     }
-    // Replace through the cursor so the change can be undone (Ctrl+Z shows the saved version).
-    QTextCursor cursor(m_editor->document());
-    cursor.select(QTextCursor::Document);
-    cursor.insertText(text);
-    m_editor->document()->setModified(true);
-    updatePreview();
-    // Only drop the old copy once this window holds its own copy on disk, so a second crash
-    // right now still loses nothing.
-    if (writeRecovery()) {
-        m_autosaveTimer.stop();
-        deleteOldCopy();
-    }
-    m_status->setText(QStringLiteral("Unsaved changes restored. Save to keep them."));
+    if (box.clickedButton() == restore && extraCopies > 0)
+        m_status->setText(QStringLiteral("Unsaved changes restored. Older copies of the same document "
+                                         "opened as new documents; use Save As to keep them."));
+    else if (box.clickedButton() == restore)
+        m_status->setText(QStringLiteral("Unsaved changes restored. Save to keep them."));
 }
 
 void MainWindow::addRecentFile(const QString &path)
@@ -275,6 +324,5 @@ void MainWindow::openRecent(const QString &file)
         setRecentFiles(files);
         return;
     }
-    if (askSaveIfModified())
-        loadFile(file);
+    loadFile(file);
 }

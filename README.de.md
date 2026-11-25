@@ -18,6 +18,7 @@ Links schreiben, rechts sofort das formatierte Ergebnis sehen. Neu bei Markdown?
 - Schaltflächen mit Alltagswörtern: New (neu), Open (öffnen), Save (speichern), Big title (große Überschrift), Bold (fett), Bullet list (Aufzählung), Quote (Zitat), Link usw.
 - Öffnet und speichert `.md`-Dokumente, auch per Drag-and-drop ins Fenster oder über „Öffnen mit“ im Datei-Explorer.
 - Wörter suchen und ersetzen (Strg+F, Strg+H) und die letzten Dokumente über das Menü Recent (zuletzt verwendet) wieder öffnen.
+- Mehrere Dokumente in Tabs geöffnet (Strg+N neuer Tab, Strg+W schließen, Strg+Tab / Strg+Umschalt+Tab zum Wechseln), jedes mit eigenem Rückgängig-Verlauf. light_md öffnet deine Tabs beim nächsten Start wieder.
 - Checklisten sowie ein Insert-Menü (einfügen) für Bilder, Tabellen, Codeblöcke und Trennlinien. Bilder neben dem Dokument erscheinen in der Vorschau und im PDF.
 - Bildschirmfotos und andere Bilder mit Strg+V einfügen: Sie werden in einem Ordner `images` neben dem Dokument gespeichert und erscheinen in der Vorschau und im PDF.
 - Export als PDF und Drucken: Das Ergebnis sieht genauso aus wie der rechte Bereich.

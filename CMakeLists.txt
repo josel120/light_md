@@ -20,6 +20,7 @@ qt_add_library(light_md_core STATIC
     src/mainwindow.cpp
     src/mainwindow.h
     src/session.cpp
+    src/tabs.cpp
     src/theme.cpp
     src/theme.h
     src/updates.cpp

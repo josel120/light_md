@@ -22,6 +22,7 @@ Write on the left, see the formatted result on the right. Format with the button
 - Button visibility and the last Edit/Reader view are remembered across restarts and when opening another file.
 - **Options** menu in everyday words: New, Open, Save, Format, Theme, Help — every item has a shortcut.
 - Open and save `.md` documents, also by dragging them onto the window or using "Open with" from the file manager.
+- Keep several documents open in tabs (Ctrl+N new tab, Ctrl+W close, Ctrl+Tab / Ctrl+Shift+Tab to switch), each with its own undo history. light_md reopens your tabs the next time you start it.
 - Find and replace words (Ctrl+F, Ctrl+H), and reopen your latest documents from the Recent menu.
 - Checklists, plus an Insert menu for pictures, tables, code blocks and separator lines. Pictures next to your document show up in the preview and the PDF.
 - Paste a screenshot or any picture with Ctrl+V: it is saved in an `images` folder next to your document and shows up in the preview and the PDF.
@@ -43,7 +44,8 @@ See [ROADMAP.md](ROADMAP.md) for what is done and what is coming next.
 | Show / hide buttons | Ctrl+Shift+B |
 | Edit document | Ctrl+E |
 | Read only | Ctrl+R or Esc |
-| New / Open / Save / Save as | Ctrl+N / Ctrl+O / Ctrl+S / Ctrl+Shift+S |
+| New tab / Open / Save / Save as | Ctrl+N / Ctrl+O / Ctrl+S / Ctrl+Shift+S |
+| Close tab / Next tab / Previous tab | Ctrl+W / Ctrl+Tab / Ctrl+Shift+Tab |
 | Export PDF / Print | Ctrl+Shift+E / Ctrl+P |
 | Undo / Redo | Ctrl+Z / Ctrl+Shift+Z (or Ctrl+Y) |
 | Bold / Italic / Link | Ctrl+B / Ctrl+I / Ctrl+K |
