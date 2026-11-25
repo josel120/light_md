@@ -21,10 +21,13 @@ Escribe a la izquierda y ve el resultado formateado a la derecha, al instante. �
 - Listas de tareas (Checklist) y un menú Insert (insertar) para imágenes, tablas, bloques de código y líneas separadoras. Las imágenes junto a tu documento se ven en la vista previa y en el PDF.
 - Exporta a PDF e imprime: el resultado se ve igual que el panel derecho.
 - Deshacer y rehacer, y atajos de teclado (Ctrl+S, Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+1, Ctrl+2).
+- Al abrir la app vuelve al último documento, justo donde lo dejaste (cursor y desplazamiento), y recuerda ese punto en cada documento reciente.
+- Texto más grande o más pequeño en los dos paneles con Ctrl + rueda del ratón o Ctrl+Más / Ctrl+Menos (Ctrl+0 vuelve al tamaño normal). El tamaño se recuerda.
+- No pierdes tu trabajo: unos segundos después de cada cambio, light_md guarda una copia de recuperación. Si la app o el ordenador se cierran de golpe, la próxima vez te ofrece recuperar los cambios sin guardar.
 - Contador de palabras y aviso de cambios sin guardar, también al cerrar la ventana.
 - Botón **Check for updates** (buscar actualizaciones): avisa cuando hay una versión nueva y descarga el archivo adecuado para tu sistema.
 - **macOS** (13 Ventura o posterior): desde la versión 1.3 hay un `macos.zip` en cada release. Descomprímelo y arrastra **light_md** a Aplicaciones. Como aún no está firmada por Apple, la primera vez macOS la bloquea: abre **Ajustes del Sistema → Privacidad y seguridad** y pulsa **Abrir igualmente**.
-- Selector de tema: **System** (escritorio), **Minimal** (aspecto claro y sobrio), **Omarchy** (sigue el tema Omarchy en Linux).
+- Selector de tema: **System** (escritorio), **Minimal** (aspecto claro y sobrio), **Dark** (oscuro y suave, Ctrl+Shift+4), **Omarchy** (sigue el tema Omarchy en Linux).
 - Atajos: **Ctrl+Shift+B** mostrar u ocultar los botones, **Ctrl+E** editar, **Ctrl+R** / **Esc** solo lectura; el resto está en Options (ver tabla en [README.md](README.md)).
 - Botón Help (ayuda) con una guía corta.
 

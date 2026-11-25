@@ -10,6 +10,7 @@
 #include <QRegularExpression>
 #include <QStyle>
 #include <QStyleFactory>
+#include <QStyleHints>
 #include <cmath>
 
 ThemeManager::ThemeManager(QObject *parent)
@@ -43,6 +44,8 @@ ThemeManager::Kind ThemeManager::kindFromString(const QString &name)
         return Kind::Omarchy;
     if (name == QLatin1String("minimal"))
         return Kind::Minimal;
+    if (name == QLatin1String("dark"))
+        return Kind::Dark;
     return Kind::System;
 }
 
@@ -53,6 +56,8 @@ QString ThemeManager::kindToString(Kind kind)
         return QStringLiteral("omarchy");
     case Kind::Minimal:
         return QStringLiteral("minimal");
+    case Kind::Dark:
+        return QStringLiteral("dark");
     case Kind::System:
     default:
         return QStringLiteral("system");
@@ -66,6 +71,8 @@ QString ThemeManager::kindLabel(Kind kind)
         return QStringLiteral("Omarchy");
     case Kind::Minimal:
         return QStringLiteral("Minimal");
+    case Kind::Dark:
+        return QStringLiteral("Dark");
     case Kind::System:
     default:
         return QStringLiteral("System");
@@ -90,9 +97,10 @@ void ThemeManager::apply()
         armOmarchyWatcher();
         reloadOmarchy();
         break;
-    case Kind::Minimal: {
+    case Kind::Minimal:
+    case Kind::Dark: {
         clearOmarchyWatcher();
-        const auto colors = minimalColors();
+        const auto colors = m_kind == Kind::Dark ? darkColors() : minimalColors();
         applyPalette(paletteFromColors(colors), styleSheetFromColors(colors), fingerprintOf(colors));
         break;
     }
@@ -123,6 +131,7 @@ void ThemeManager::applySystem()
     }
     qApp->setPalette(m_systemPalette);
     qApp->setStyleSheet(m_systemStyle);
+    setWindowFrameScheme(QString());
     m_appliedKind = Kind::System;
     m_appliedFingerprint = QStringLiteral("system");
 }
@@ -139,8 +148,25 @@ void ThemeManager::applyPalette(const QPalette &palette, const QString &styleShe
     }
     qApp->setPalette(palette);
     qApp->setStyleSheet(styleSheet);
+    setWindowFrameScheme(palette.color(QPalette::Window).lightness() < 128 ? QStringLiteral("dark")
+                                                                           : QStringLiteral("light"));
     m_appliedKind = m_kind;
     m_appliedFingerprint = fingerprint;
+}
+
+void ThemeManager::setWindowFrameScheme(const QString &mode)
+{
+    // Makes the title bar match on Windows and macOS; an empty mode follows the desktop again.
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+    Qt::ColorScheme scheme = Qt::ColorScheme::Unknown;
+    if (mode == QLatin1String("dark"))
+        scheme = Qt::ColorScheme::Dark;
+    else if (mode == QLatin1String("light"))
+        scheme = Qt::ColorScheme::Light;
+    QGuiApplication::styleHints()->setColorScheme(scheme);
+#else
+    Q_UNUSED(mode);
+#endif
 }
 
 void ThemeManager::armOmarchyWatcher()
@@ -235,6 +261,25 @@ QHash<QString, QString> ThemeManager::minimalColors()
         {QStringLiteral("accent"), QStringLiteral("#2f2f2b")},
         {QStringLiteral("selection"), QStringLiteral("#e4e4df")},
         {QStringLiteral("muted"), QStringLiteral("#c8c8c2")},
+    };
+}
+
+QHash<QString, QString> ThemeManager::darkColors()
+{
+    // Soft dark surface for Windows and macOS: charcoal paper, off-white ink, no pure black.
+    return {
+        {QStringLiteral("mode"), QStringLiteral("dark")},
+        {QStringLiteral("background"), QStringLiteral("#1e1f22")},
+        {QStringLiteral("dark_background"), QStringLiteral("#17181a")},
+        {QStringLiteral("lighter_background"), QStringLiteral("#26272b")},
+        {QStringLiteral("foreground"), QStringLiteral("#e3e3e0")},
+        {QStringLiteral("dark_foreground"), QStringLiteral("#8c8c88")},
+        {QStringLiteral("light_foreground"), QStringLiteral("#c9c9c5")},
+        {QStringLiteral("bright_foreground"), QStringLiteral("#ffffff")},
+        // Links keep this color in the PDF too, so it has to read on white paper as well.
+        {QStringLiteral("accent"), QStringLiteral("#4a90e2")},
+        {QStringLiteral("selection"), QStringLiteral("#3d5a80")},
+        {QStringLiteral("muted"), QStringLiteral("#3a3b40")},
     };
 }
 

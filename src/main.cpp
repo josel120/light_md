@@ -7,6 +7,7 @@
 #include <QCheckBox>
 #include <QCloseEvent>
 #include <QDesktopServices>
+#include <QDateTime>
 #include <QDir>
 #include <QDragEnterEvent>
 #include <QDropEvent>
@@ -20,6 +21,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLockFile>
 #include <QKeyEvent>
 #include <QKeySequence>
 #include <QLabel>
@@ -38,6 +40,7 @@
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QSaveFile>
+#include <QStandardPaths>
 #include <QScrollBar>
 #include <QSettings>
 #include <QSignalBlocker>
@@ -48,9 +51,13 @@
 #include <QTextDocument>
 #include <QTimer>
 #include <QUrl>
+#include <QUuid>
 #include <QVBoxLayout>
 #include <QVersionNumber>
+#include <QWheelEvent>
 #include <QWidget>
+
+#include <memory>
 
 class MainWindow : public QMainWindow
 {
@@ -81,12 +88,10 @@ public:
         m_editor->viewport()->installEventFilter(this);
         m_preview = new QTextBrowser(m_splitter);
         m_preview->setOpenExternalLinks(true);
-        QFont readFont = m_preview->font();
-        readFont.setPointSizeF(readFont.pointSizeF() + 2);
-        m_preview->setFont(readFont);
-        QFont writeFont = m_editor->font();
-        writeFont.setPointSizeF(writeFont.pointSizeF() + 1);
-        m_editor->setFont(writeFont);
+        // Base sizes; the user's bigger/smaller text setting is added on top (see applyTextSize).
+        m_previewBaseSize = m_preview->font().pointSizeF() + 2;
+        m_editorBaseSize = m_editor->font().pointSizeF() + 1;
+        m_preview->viewport()->installEventFilter(this);
         m_splitter->addWidget(m_editor);
         m_splitter->addWidget(m_preview);
         m_splitter->setStretchFactor(0, 1);
@@ -109,15 +114,42 @@ public:
         m_statusTimer.setSingleShot(true);
         m_statusTimer.setInterval(350);
         connect(&m_statusTimer, &QTimer::timeout, this, [this] { updateStatus(); });
+        // A few seconds after a change, keep a recovery copy in case the app or the computer crashes.
+        m_autosaveTimer.setSingleShot(true);
+        m_autosaveTimer.setInterval(5000);
+        connect(&m_autosaveTimer, &QTimer::timeout, this, [this] { writeRecovery(); });
+        startRecovery();
 
         connect(m_editor, &QPlainTextEdit::textChanged, this, [this] {
+            // Any edit (typed, pasted or from a button) puts the writing pane in charge of scrolling.
+            m_previewLeads = false;
             m_previewTimer.start();
+            // Not restarted on every key, so a long typing session still gets a recovery copy.
+            if (!m_autosaveTimer.isActive())
+                m_autosaveTimer.start();
             m_statusTimer.start();
         });
         connect(m_editor->document(), &QTextDocument::modificationChanged, this, [this](bool changed) {
             setWindowModified(changed);
             updateStatus();
+            // Back to the saved text (for example with Undo): a crash now must not offer undone edits.
+            if (!changed)
+                clearRecovery();
         });
+
+        // Scrolling either pane moves the other to the same place, proportionally.
+        QScrollBar *editorBar = m_editor->verticalScrollBar();
+        QScrollBar *previewBar = m_preview->verticalScrollBar();
+        connect(editorBar, &QScrollBar::valueChanged, this, [this, editorBar, previewBar] {
+            syncScroll(editorBar, previewBar);
+        });
+        connect(previewBar, &QScrollBar::valueChanged, this, [this, editorBar, previewBar] {
+            syncScroll(previewBar, editorBar);
+        });
+        // Either pane's height changes after a re-render, a resize or a new text size; realign the
+        // other pane to whichever one the user is working in.
+        connect(previewBar, &QScrollBar::rangeChanged, this, [this] { syncFromLeader(); });
+        connect(editorBar, &QScrollBar::rangeChanged, this, [this] { syncFromLeader(); });
 
         QSettings settings;
         const QByteArray geometry = settings.value(QStringLiteral("geometry")).toByteArray();
@@ -127,9 +159,21 @@ public:
         // Classic defaults on first run: buttons visible, two panes (edit mode).
         const bool showButtons = settings.value(QStringLiteral("ui/showButtons"), true).toBool();
         const bool editMode = settings.value(QStringLiteral("ui/editMode"), true).toBool();
+        m_syncScroll = settings.value(QStringLiteral("ui/syncScroll"), true).toBool();
+        m_syncScrollAction->setChecked(m_syncScroll);
+        m_textSize = qBound(kMinTextSize, settings.value(QStringLiteral("ui/textSize"), 0).toInt(), kMaxTextSize);
+        applyTextSize();
 
-        if (!initialFile.isEmpty()) {
-            loadFile(initialFile);
+        // A file given on the command line wins; otherwise pick up the document open last time.
+        QString startFile = initialFile;
+        if (startFile.isEmpty()) {
+            const QString last = settings.value(QStringLiteral("session/lastFile")).toString();
+            if (!last.isEmpty() && QFileInfo::exists(last))
+                startFile = last;
+        }
+
+        if (!startFile.isEmpty() && loadFile(startFile)) {
+            // Loaded; loadFile already restored where the user left off.
         } else {
             m_editor->setPlainText(QStringLiteral(
                 "# Welcome to light_md\n\n"
@@ -147,6 +191,9 @@ public:
         // Apply after load so a failed open still gets remembered chrome.
         setShowButtons(showButtons);
         setEditMode(editMode);
+
+        // After the window is on screen, so the question appears in front of it.
+        QTimer::singleShot(0, this, [this] { offerRecovery(); });
     }
 
     bool loadFile(const QString &path)
@@ -157,12 +204,15 @@ public:
                                  QStringLiteral("Could not read the file:\n%1").arg(path));
             return false;
         }
+        rememberPosition();
         m_editor->setPlainText(QString::fromUtf8(file.readAll()));
         m_editor->document()->setModified(false);
+        clearRecovery();
         setFilePath(path);
         addRecentFile(path);
         m_preview->verticalScrollBar()->setValue(0);
         updatePreview();
+        restorePosition(path);
         // Keep the user's current Edit/Reader choice (remembered in QSettings).
         return true;
     }
@@ -174,7 +224,16 @@ protected:
             event->ignore();
             return;
         }
-        QSettings().setValue(QStringLiteral("geometry"), saveGeometry());
+        rememberPosition();
+        QSettings settings;
+        settings.setValue(QStringLiteral("geometry"), saveGeometry());
+        // An unsaved new document has nothing to reopen, so the next start shows the welcome text.
+        if (m_filePath.isEmpty())
+            settings.remove(QStringLiteral("session/lastFile"));
+        else
+            settings.setValue(QStringLiteral("session/lastFile"), cleanPath(m_filePath));
+        // A normal close (saved, or "Don't save") leaves nothing to recover.
+        clearRecovery();
         event->accept();
     }
 
@@ -221,6 +280,32 @@ protected:
             if (!path.isEmpty() && askSaveIfModified())
                 loadFile(path);
             return true;
+        }
+        // Remember which pane the user last scrolled, clicked or typed in. Only that pane drives the
+        // other one, so the preview moving by itself (after a refresh or a resize) never drags the editor.
+        if (event->type() == QEvent::Wheel || event->type() == QEvent::MouseButtonPress
+            || event->type() == QEvent::KeyPress) {
+            if (auto *widget = qobject_cast<QWidget *>(watched)) {
+                if (widget == m_preview || m_preview->isAncestorOf(widget))
+                    m_previewLeads = true;
+                else if (widget == m_editor || m_editor->isAncestorOf(widget))
+                    m_previewLeads = false;
+            }
+        }
+        // Ctrl + mouse wheel changes the text size of both panes together (and remembers it),
+        // instead of Qt's built-in zoom, which only touches one pane and is forgotten.
+        if (event->type() == QEvent::Wheel
+            && (watched == m_editor->viewport() || watched == m_preview->viewport())) {
+            auto *wheel = static_cast<QWheelEvent *>(event);
+            if (wheel->modifiers() & Qt::ControlModifier) {
+                // Touchpads send many small steps; add them up to whole wheel notches.
+                m_wheelZoom += wheel->angleDelta().y();
+                const int steps = m_wheelZoom / 120;
+                m_wheelZoom -= steps * 120;
+                if (steps != 0)
+                    changeTextSize(steps);
+                return true;
+            }
         }
         if (watched == m_editor->viewport()) {
             if (event->type() == QEvent::DragEnter || event->type() == QEvent::DragMove) {
@@ -326,6 +411,26 @@ private:
         m_showButtonsAction->setCheckable(true);
         m_showButtonsAction->setChecked(true);
 
+        m_syncScrollAction = addOption(options, QStringLiteral("S&ync scrolling"),
+                                       QStringLiteral("Scroll the writing pane and the preview together"),
+                                       QKeySequence());
+        m_syncScrollAction->setCheckable(true);
+        m_syncScrollAction->setChecked(true);
+
+        auto *textSizeMenu = options->addMenu(QStringLiteral("&Text size"));
+        auto *actBigger = addOption(textSizeMenu, QStringLiteral("&Bigger text"),
+                                    QStringLiteral("Make the text bigger in both panes"), QKeySequence::ZoomIn);
+        // Ctrl+= too, so it works without Shift on keyboards where + needs Shift.
+        actBigger->setShortcuts({QKeySequence(QKeySequence::ZoomIn), QKeySequence(QStringLiteral("Ctrl+="))});
+        auto *actSmaller = addOption(textSizeMenu, QStringLiteral("&Smaller text"),
+                                     QStringLiteral("Make the text smaller in both panes"), QKeySequence::ZoomOut);
+        auto *actNormalSize = addOption(textSizeMenu, QStringLiteral("&Normal size"),
+                                        QStringLiteral("Go back to the normal text size"),
+                                        QKeySequence(QStringLiteral("Ctrl+0")));
+        connect(actBigger, &QAction::triggered, this, [this] { changeTextSize(1); });
+        connect(actSmaller, &QAction::triggered, this, [this] { changeTextSize(-1); });
+        connect(actNormalSize, &QAction::triggered, this, [this] { changeTextSize(-m_textSize); });
+
         options->addSeparator();
         m_formatMenu = options->addMenu(QStringLiteral("&Format"));
         auto *actUndo = addOption(m_formatMenu, QStringLiteral("&Undo"),
@@ -384,6 +489,7 @@ private:
             {ThemeManager::Kind::System, "Ctrl+Shift+1"},
             {ThemeManager::Kind::Minimal, "Ctrl+Shift+2"},
             {ThemeManager::Kind::Omarchy, "Ctrl+Shift+3"},
+            {ThemeManager::Kind::Dark, "Ctrl+Shift+4"},
         };
         for (const ThemeShortcut &entry : themeShortcuts) {
             auto *action = addOption(themeMenu, ThemeManager::kindLabel(entry.kind),
@@ -455,6 +561,11 @@ private:
         connect(m_editAction, &QAction::toggled, this, [this](bool on) { setEditMode(on); });
         connect(actRead, &QAction::triggered, this, [this] { setEditMode(false); });
         connect(m_showButtonsAction, &QAction::toggled, this, [this](bool on) { setShowButtons(on); });
+        connect(m_syncScrollAction, &QAction::toggled, this, [this](bool on) {
+            m_syncScroll = on;
+            QSettings().setValue(QStringLiteral("ui/syncScroll"), on);
+            syncFromLeader();
+        });
 
         connect(actUndo, &QAction::triggered, m_editor, &QPlainTextEdit::undo);
         connect(actRedo, &QAction::triggered, m_editor, &QPlainTextEdit::redo);
@@ -573,6 +684,12 @@ private:
                 m_formatBar->setVisible(m_showButtons && editing);
             return;
         }
+        // Coming back from Reader, keep the part the user was reading: the preview leads.
+        // (Not at startup, before the window shows, where restorePosition decides.)
+        const bool fromReader = editing && isVisible() && !m_editor->isVisible();
+        const double readingRatio = scrollRatio(m_preview->verticalScrollBar());
+        if (fromReader)
+            m_previewLeads = true;
         m_editMode = editing;
         m_editor->setVisible(editing);
         if (m_formatMenu)
@@ -587,10 +704,43 @@ private:
             if (m_splitter->sizes().value(0, 0) < 80)
                 m_splitter->setSizes({550, 550});
             m_editor->setFocus(Qt::ShortcutFocusReason);
+            if (fromReader) {
+                // Showing the editor narrows the preview and re-wraps it; realign once the layout settles.
+                QTimer::singleShot(0, this, [this, readingRatio] {
+                    if (!m_editMode)
+                        return;
+                    setScrollRatio(m_preview->verticalScrollBar(), readingRatio);
+                    syncFromLeader();
+                });
+            } else {
+                syncFromLeader();
+            }
         } else {
             m_preview->setFocus(Qt::OtherFocusReason);
         }
         QSettings().setValue(QStringLiteral("ui/editMode"), editing);
+        updateStatus();
+    }
+
+    void changeTextSize(int steps)
+    {
+        const int size = qBound(kMinTextSize, m_textSize + steps, kMaxTextSize);
+        if (size == m_textSize)
+            return;
+        m_textSize = size;
+        QSettings().setValue(QStringLiteral("ui/textSize"), m_textSize);
+        applyTextSize();
+    }
+
+    // Each step is one point on top of the base size; titles in the preview grow with it.
+    void applyTextSize()
+    {
+        QFont writeFont = m_editor->font();
+        writeFont.setPointSizeF(m_editorBaseSize + m_textSize);
+        m_editor->setFont(writeFont);
+        QFont readFont = m_preview->font();
+        readFont.setPointSizeF(m_previewBaseSize + m_textSize);
+        m_preview->setFont(readFont);
         updateStatus();
     }
 
@@ -605,6 +755,42 @@ private:
         return QString();
     }
 
+    static double scrollRatio(const QScrollBar *bar)
+    {
+        return bar->maximum() > bar->minimum()
+                   ? double(bar->value() - bar->minimum()) / (bar->maximum() - bar->minimum())
+                   : 0.0;
+    }
+
+    static void setScrollRatio(QScrollBar *bar, double ratio)
+    {
+        bar->setValue(bar->minimum() + qRound(ratio * (bar->maximum() - bar->minimum())));
+    }
+
+    // Moves `to` to the same relative position as `from`. Only while both panes are showing, and
+    // only from the pane the user is working in (see m_previewLeads).
+    void syncScroll(QScrollBar *from, QScrollBar *to)
+    {
+        if (!m_syncScroll || m_syncingScroll || !m_editor->isVisible())
+            return;
+        if ((from == m_preview->verticalScrollBar()) != m_previewLeads)
+            return;
+        // The guard stops `to` from scrolling `from` back and making the panes jitter.
+        m_syncingScroll = true;
+        setScrollRatio(to, scrollRatio(from));
+        m_syncingScroll = false;
+    }
+
+    void syncFromLeader()
+    {
+        QScrollBar *editorBar = m_editor->verticalScrollBar();
+        QScrollBar *previewBar = m_preview->verticalScrollBar();
+        if (m_previewLeads)
+            syncScroll(previewBar, editorBar);
+        else
+            syncScroll(editorBar, previewBar);
+    }
+
     void updatePreview()
     {
         // Keep the reading position; otherwise the pane jumps to the top on every keystroke.
@@ -612,6 +798,7 @@ private:
         const int scroll = bar->value();
         m_preview->setMarkdown(m_editor->toPlainText());
         bar->setValue(scroll);
+        syncFromLeader();
     }
 
     void updateStatus()
@@ -621,8 +808,13 @@ private:
         const bool modified = m_editor->document()->isModified();
         const QString mode = m_editMode ? QStringLiteral("Editing") : QStringLiteral("Reading");
         const QString chrome = m_showButtons ? QStringLiteral("Buttons") : QStringLiteral("Minimal");
-        m_status->setText(QStringLiteral("%1 · %2    Words: %3    File: %4%5")
-                              .arg(mode, chrome)
+        // Only mentioned when it differs from normal, so the status line stays short.
+        const QString textSize =
+            m_textSize == 0 ? QString()
+                            : QStringLiteral(" · Text %1%").arg(qRound(100.0 * (m_editorBaseSize + m_textSize)
+                                                                       / m_editorBaseSize));
+        m_status->setText(QStringLiteral("%1 · %2%3    Words: %4    File: %5%6")
+                              .arg(mode, chrome, textSize)
                               .arg(words)
                               .arg(m_filePath.isEmpty() ? QStringLiteral("(not saved)")
                                                         : QDir::toNativeSeparators(m_filePath))
@@ -638,7 +830,9 @@ private:
 
     void setFilePath(const QString &path)
     {
-        m_filePath = path;
+        // Always absolute: a file given as "notes.md" on the command line must still mean the same
+        // file later, whatever folder light_md is started from (Save, Recent, crash recovery).
+        m_filePath = path.isEmpty() ? QString() : cleanPath(path);
         // Pictures written as "photo.png" are looked up next to the document.
         m_preview->setSearchPaths(path.isEmpty() ? QStringList() : QStringList{QFileInfo(path).absolutePath()});
         if (!path.isEmpty())
@@ -879,8 +1073,16 @@ private:
             setEditMode(true);
         m_findInfo->clear();
         const QTextDocument::FindFlags flags = findFlags(backward);
-        if (m_editor->find(text, flags))
+        // A match moves the writing pane; the preview should follow it there, even if the user
+        // last scrolled the preview.
+        const auto followMatch = [this] {
+            m_previewLeads = false;
+            syncFromLeader();
+        };
+        if (m_editor->find(text, flags)) {
+            followMatch();
             return true;
+        }
         // Nothing more in this direction: continue from the other end of the document.
         const QTextCursor saved = m_editor->textCursor();
         QTextCursor cursor = saved;
@@ -889,6 +1091,7 @@ private:
         if (m_editor->find(text, flags)) {
             m_findInfo->setText(backward ? QStringLiteral("Continued from the end")
                                          : QStringLiteral("Continued from the top"));
+            followMatch();
             return true;
         }
         m_editor->setTextCursor(saved);
@@ -936,9 +1139,221 @@ private:
 
     static void setRecentFiles(const QStringList &files) { QSettings().setValue(QStringLiteral("recentFiles"), files); }
 
+    static QString cleanPath(const QString &path) { return QDir::cleanPath(QFileInfo(path).absoluteFilePath()); }
+
+    // Saves where the current document was left: the cursor, and how far each pane was scrolled
+    // (scrolling does not move the cursor, so the visible part can be elsewhere).
+    void rememberPosition()
+    {
+        if (m_filePath.isEmpty())
+            return;
+        QSettings settings;
+        QVariantMap all = settings.value(QStringLiteral("session/positions")).toMap();
+        QVariantMap spot{{QStringLiteral("cursor"), m_editor->textCursor().position()},
+                         {QStringLiteral("scroll"), scrollRatio(m_preview->verticalScrollBar())}};
+        // A hidden writing pane (Reader mode) has a stale position; the reading pane is what counts then.
+        if (m_editor->isVisible())
+            spot.insert(QStringLiteral("editorScroll"), scrollRatio(m_editor->verticalScrollBar()));
+        all.insert(cleanPath(m_filePath), spot);
+        // Only documents still in the Recent list are worth remembering; this keeps the list short.
+        const QStringList recent = recentFiles();
+        for (auto it = all.begin(); it != all.end();) {
+            if (recent.contains(it.key(), Qt::CaseInsensitive))
+                ++it;
+            else
+                it = all.erase(it);
+        }
+        settings.setValue(QStringLiteral("session/positions"), all);
+    }
+
+    void restorePosition(const QString &path)
+    {
+        const QVariantMap saved =
+            QSettings().value(QStringLiteral("session/positions")).toMap().value(cleanPath(path)).toMap();
+        if (saved.isEmpty())
+            return;
+        QTextCursor cursor = m_editor->textCursor();
+        const int last = m_editor->document()->characterCount() - 1;
+        cursor.setPosition(qBound(0, saved.value(QStringLiteral("cursor")).toInt(), last));
+        m_editor->setTextCursor(cursor);
+        const double scroll = saved.value(QStringLiteral("scroll")).toDouble();
+        const bool hasEditorScroll = saved.contains(QStringLiteral("editorScroll"));
+        const double editorScroll = saved.value(QStringLiteral("editorScroll")).toDouble();
+        // Wait for the window to be laid out, so both panes know their height before scrolling.
+        QTimer::singleShot(0, this, [this, scroll, hasEditorScroll, editorScroll] {
+            QScrollBar *editorBar = m_editor->verticalScrollBar();
+            QScrollBar *previewBar = m_preview->verticalScrollBar();
+            if (m_editor->isVisible() && hasEditorScroll) {
+                m_previewLeads = false;
+                setScrollRatio(editorBar, editorScroll);
+                if (!m_syncScroll)
+                    setScrollRatio(previewBar, scroll);
+            } else {
+                // Left in Reader mode (or saved by an older version): the reading position leads.
+                m_previewLeads = true;
+                setScrollRatio(previewBar, scroll);
+                if (!m_syncScroll)
+                    m_editor->centerCursor();
+            }
+            syncFromLeader();
+        });
+    }
+
+    // Crash recovery. Each running window owns "<id>.md" (the text) and "<id>.json" (which document
+    // it belongs to) in the app's data folder, plus "<id>.lock", held while the window is open.
+    // A copy whose lock nobody holds was left behind by a crash.
+    static QString recoveryFolder()
+    {
+        return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+            .filePath(QStringLiteral("recovery"));
+    }
+
+    QString recoveryFile(const QString &extension) const
+    {
+        return QDir(recoveryFolder()).filePath(m_recoveryId + extension);
+    }
+
+    void startRecovery()
+    {
+        QDir().mkpath(recoveryFolder());
+        m_recoveryId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+        m_recoveryLock = std::make_unique<QLockFile>(recoveryFile(QStringLiteral(".lock")));
+        // 0 = only a dead process makes the lock stale, however long the window stays open.
+        m_recoveryLock->setStaleLockTime(0);
+        m_recoveryLock->tryLock(0);
+    }
+
+    // Returns true when a complete copy of the unsaved text is on disk.
+    bool writeRecovery()
+    {
+        if (!m_editor->document()->isModified()) {
+            clearRecovery();
+            return false;
+        }
+        // The text first and the description last, so a description always points to a complete copy.
+        QSaveFile text(recoveryFile(QStringLiteral(".md")));
+        if (!text.open(QIODevice::WriteOnly) || text.write(m_editor->toPlainText().toUtf8()) < 0 || !text.commit())
+            return false;
+        const QJsonObject info{{QStringLiteral("path"), m_filePath},
+                               {QStringLiteral("savedAt"), QDateTime::currentDateTime().toString(Qt::ISODate)}};
+        QSaveFile json(recoveryFile(QStringLiteral(".json")));
+        if (!json.open(QIODevice::WriteOnly) || json.write(QJsonDocument(info).toJson()) < 0)
+            return false;
+        return json.commit();
+    }
+
+    void clearRecovery()
+    {
+        m_autosaveTimer.stop();
+        QFile::remove(recoveryFile(QStringLiteral(".json")));
+        QFile::remove(recoveryFile(QStringLiteral(".md")));
+    }
+
+    // Offers the newest copy left behind by a crashed window, if any.
+    void offerRecovery()
+    {
+        const QDir folder(recoveryFolder());
+        QString bestId;
+        QJsonObject bestInfo;
+        std::unique_ptr<QLockFile> bestLock;
+        const QStringList descriptions = folder.entryList({QStringLiteral("*.json")}, QDir::Files);
+        for (const QString &name : descriptions) {
+            const QString id = QFileInfo(name).completeBaseName();
+            if (id == m_recoveryId || !QFileInfo::exists(folder.filePath(id + QStringLiteral(".md"))))
+                continue;
+            // Locked = that window is still open (maybe a second light_md); leave its copy alone.
+            auto lock = std::make_unique<QLockFile>(folder.filePath(id + QStringLiteral(".lock")));
+            lock->setStaleLockTime(0);
+            if (!lock->tryLock(0))
+                continue;
+            QFile file(folder.filePath(name));
+            if (!file.open(QIODevice::ReadOnly))
+                continue;
+            const QJsonObject info = QJsonDocument::fromJson(file.readAll()).object();
+            if (bestId.isEmpty() || info.value(QStringLiteral("savedAt")).toString()
+                                        > bestInfo.value(QStringLiteral("savedAt")).toString()) {
+                bestId = id;
+                bestInfo = info;
+                bestLock = std::move(lock);
+            }
+        }
+        // A crashed window with nothing unsaved leaves only its lock behind; tidy those up.
+        const QStringList locks = folder.entryList({QStringLiteral("*.lock")}, QDir::Files);
+        for (const QString &name : locks) {
+            const QString id = QFileInfo(name).completeBaseName();
+            if (id == m_recoveryId || id == bestId || QFileInfo::exists(folder.filePath(id + QStringLiteral(".json"))))
+                continue;
+            QLockFile stale(folder.filePath(name));
+            stale.setStaleLockTime(0);
+            if (stale.tryLock(0))
+                stale.unlock(); // Unlocking removes the file.
+        }
+        if (bestId.isEmpty())
+            return;
+
+        QFile textFile(folder.filePath(bestId + QStringLiteral(".md")));
+        if (!textFile.open(QIODevice::ReadOnly))
+            return;
+        const QString text = QString::fromUtf8(textFile.readAll());
+        textFile.close();
+        const QString path = bestInfo.value(QStringLiteral("path")).toString();
+        const QDateTime savedAt =
+            QDateTime::fromString(bestInfo.value(QStringLiteral("savedAt")).toString(), Qt::ISODate);
+        const QString name = path.isEmpty() ? QStringLiteral("a new document") : QFileInfo(path).fileName();
+
+        QMessageBox box(QMessageBox::Question, QStringLiteral("Restore unsaved changes?"),
+                        QStringLiteral("light_md closed unexpectedly while you had unsaved changes in <b>%1</b>.<br>"
+                                       "A copy was kept automatically at %2.<br><br>"
+                                       "Do you want to get those changes back?")
+                            .arg(name.toHtmlEscaped(), QLocale().toString(savedAt.time(), QLocale::ShortFormat)),
+                        QMessageBox::NoButton, this);
+        QPushButton *restore = box.addButton(QStringLiteral("Restore"), QMessageBox::AcceptRole);
+        box.addButton(QStringLiteral("Discard"), QMessageBox::RejectRole);
+        box.setDefaultButton(restore);
+        box.exec();
+
+        const auto deleteOldCopy = [&] {
+            QFile::remove(folder.filePath(bestId + QStringLiteral(".json")));
+            QFile::remove(folder.filePath(bestId + QStringLiteral(".md")));
+        };
+        if (box.clickedButton() != restore) {
+            deleteOldCopy();
+            return;
+        }
+        // From here on, any early return keeps the old copy (only its lock is released by
+        // bestLock going out of scope), so it is offered again on the next start.
+
+        // Open the original document first, so Save writes back to it.
+        if (!path.isEmpty() && QFileInfo::exists(path) && cleanPath(path) != m_filePath) {
+            if (!askSaveIfModified() || !loadFile(path))
+                return;
+        } else if (path.isEmpty() && !m_filePath.isEmpty()) {
+            if (!askSaveIfModified())
+                return;
+            m_editor->clear();
+            setFilePath(QString());
+        } else if (!path.isEmpty() && !QFileInfo::exists(path)) {
+            // The original was moved or deleted; keep its name so Save recreates it there.
+            setFilePath(path);
+        }
+        // Replace through the cursor so the change can be undone (Ctrl+Z shows the saved version).
+        QTextCursor cursor(m_editor->document());
+        cursor.select(QTextCursor::Document);
+        cursor.insertText(text);
+        m_editor->document()->setModified(true);
+        updatePreview();
+        // Only drop the old copy once this window holds its own copy on disk, so a second crash
+        // right now still loses nothing.
+        if (writeRecovery()) {
+            m_autosaveTimer.stop();
+            deleteOldCopy();
+        }
+        m_status->setText(QStringLiteral("Unsaved changes restored. Save to keep them."));
+    }
+
     static void addRecentFile(const QString &path)
     {
-        const QString clean = QDir::cleanPath(QFileInfo(path).absoluteFilePath());
+        const QString clean = cleanPath(path);
         QStringList files = recentFiles();
         files.removeIf([&](const QString &f) { return f.compare(clean, Qt::CaseInsensitive) == 0; });
         files.prepend(clean);
@@ -1102,8 +1517,10 @@ private:
     {
         if (!askSaveIfModified())
             return;
+        rememberPosition();
         m_editor->clear();
         m_editor->document()->setModified(false);
+        clearRecovery();
         setFilePath(QString());
         updatePreview();
         setEditMode(true);
@@ -1145,6 +1562,7 @@ private:
             return false;
         }
         m_editor->document()->setModified(false);
+        clearRecovery();
         setFilePath(path);
         addRecentFile(path);
         return true;
@@ -1222,7 +1640,9 @@ private:
                 "<p><b>Layout</b><br>"
                 "Ctrl+Shift+B — Show / hide buttons<br>"
                 "Ctrl+E — Edit document (show writing pane)<br>"
-                "Ctrl+R or Esc — Read only</p>"
+                "Ctrl+R or Esc — Read only<br>"
+                "<i>Sync scrolling</i> (Options) — the preview follows the writing pane<br>"
+                "Ctrl++ / Ctrl+- / Ctrl+0 — Bigger / smaller / normal text (or Ctrl + mouse wheel)</p>"
                 "<p><b>File</b><br>"
                 "Ctrl+N New · Ctrl+O Open · Ctrl+S Save · Ctrl+Shift+S Save as<br>"
                 "Ctrl+Shift+E Export PDF · Ctrl+P Print</p>"
@@ -1239,7 +1659,10 @@ private:
                 "Ctrl+F Find · Ctrl+H Replace · F3 / Shift+F3 Next / previous match · Esc closes the find bar</p>"
                 "<p><b>Theme</b><br>"
                 "Ctrl+Shift+1 System · Ctrl+Shift+2 Minimal · Ctrl+Shift+3 Omarchy "
-                "(Omarchy only where available)</p>"
+                "(Omarchy only where available) · Ctrl+Shift+4 Dark</p>"
+                "<p><b>Never lose your work</b><br>"
+                "A few seconds after each change, light_md keeps a recovery copy. If it closes unexpectedly, "
+                "it offers to restore your unsaved changes the next time you open it.</p>"
                 "<p><b>Updates</b><br>"
                 "<i>Check for updates</i> tells you when a new version is ready and downloads it.</p>"
                 "<p>F1 — Help. You can also drag a document onto the window to open it, "
@@ -1257,6 +1680,7 @@ private:
     QLabel *m_status = nullptr;
     QAction *m_editAction = nullptr;
     QAction *m_showButtonsAction = nullptr;
+    QAction *m_syncScrollAction = nullptr;
     QMenu *m_formatMenu = nullptr;
     QMenu *m_recentMenu = nullptr;
     QWidget *m_findBar = nullptr;
@@ -1268,9 +1692,23 @@ private:
     QNetworkReply *m_updateReply = nullptr;
     QTimer m_previewTimer;
     QTimer m_statusTimer;
+    QTimer m_autosaveTimer;
+    QString m_recoveryId;
+    std::unique_ptr<QLockFile> m_recoveryLock;
     QString m_filePath;
     bool m_editMode = true;
     bool m_showButtons = true;
+    bool m_syncScroll = true;
+    bool m_syncingScroll = false;
+    // True when the user last scrolled, clicked or typed in the reading pane; that pane then
+    // drives synchronized scrolling. Otherwise the writing pane does.
+    bool m_previewLeads = false;
+    static constexpr int kMinTextSize = -5;
+    static constexpr int kMaxTextSize = 20;
+    int m_textSize = 0;
+    int m_wheelZoom = 0;
+    qreal m_editorBaseSize = 10;
+    qreal m_previewBaseSize = 11;
 };
 
 static ThemeManager::Kind loadInitialTheme()

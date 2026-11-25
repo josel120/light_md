@@ -21,10 +21,13 @@ Escreva à esquerda e veja o resultado formatado à direita, na hora. Nunca usou
 - Listas de tarefas (Checklist) e um menu Insert (inserir) para imagens, tabelas, blocos de código e linhas separadoras. As imagens ao lado do documento aparecem na pré-visualização e no PDF.
 - Exporta para PDF e imprime: o resultado fica igual ao painel da direita.
 - Desfazer e refazer, além de atalhos de teclado (Ctrl+S, Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+1, Ctrl+2).
+- Ao abrir o app, volta ao último documento exatamente onde você parou (cursor e rolagem), e lembra esse ponto em cada documento recente.
+- Texto maior ou menor nos dois painéis com Ctrl + roda do mouse ou Ctrl+Mais / Ctrl+Menos (Ctrl+0 volta ao tamanho normal). O tamanho é lembrado.
+- Você não perde seu trabalho: alguns segundos após cada alteração, o light_md guarda uma cópia de recuperação. Se o app ou o computador travar, na próxima vez ele oferece recuperar as alterações não salvas.
 - Contador de palavras e aviso de alterações não salvas, inclusive ao fechar a janela.
 - Botão **Check for updates** (procurar atualizações): avisa quando há uma versão nova e baixa o arquivo certo para o seu sistema.
 - **macOS** (13 Ventura ou posterior): a partir da versão 1.3 cada release traz um `macos.zip`. Descompacte e arraste o **light_md** para Aplicativos. Como ainda não é assinado pela Apple, na primeira vez o macOS o bloqueia: abra **Ajustes do Sistema → Privacidade e Segurança** e clique em **Abrir Mesmo Assim**.
-- Seletor de tema: **System** (área de trabalho), **Minimal** (visual claro e sóbrio), **Omarchy** (acompanha o tema Omarchy no Linux).
+- Seletor de tema: **System** (área de trabalho), **Minimal** (visual claro e sóbrio), **Dark** (escuro e suave, Ctrl+Shift+4), **Omarchy** (acompanha o tema Omarchy no Linux).
 - Atalhos: **Ctrl+Shift+B** mostrar ou ocultar os botões, **Ctrl+E** editar, **Ctrl+R** / **Esc** só leitura; o restante está em Options (tabela em [README.md](README.md)).
 - Botão Help (ajuda) com um guia curto.
 
