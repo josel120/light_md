@@ -24,6 +24,7 @@ Links schreiben, rechts sofort das formatierte Ergebnis sehen. Neu bei Markdown?
 - Öffnet beim Start das zuletzt geöffnete Dokument genau an der Stelle, an der du aufgehört hast (Cursor und Bildlauf), und merkt sich diese Stelle für jedes zuletzt verwendete Dokument.
 - Text in beiden Bereichen größer oder kleiner mit Strg + Mausrad oder Strg+Plus / Strg+Minus (Strg+0 stellt die normale Größe wieder her). Die Größe wird gespeichert.
 - Keine Arbeit geht verloren: Wenige Sekunden nach jeder Änderung legt light_md eine Wiederherstellungskopie an. Stürzt die App oder der Computer ab, bietet es beim nächsten Start an, die ungespeicherten Änderungen wiederherzustellen.
+- Der Schreibbereich liest sich leichter: Überschriften sind größer, **fett** und *kursiv* sind sichtbar, Links und Code heben sich ab und Zitate sind abgedunkelt. Die Markdown-Zeichen bleiben sichtbar, in einer ruhigeren Farbe, und die Farben folgen dem Thema.
 - Wortzähler und Warnung bei ungespeicherten Änderungen, auch beim Schließen des Fensters.
 - Schaltfläche **Check for updates** (nach Updates suchen): meldet neue Versionen und lädt die passende Datei für dein System herunter.
 - **macOS** (13 Ventura oder neuer): Ab Version 1.3 enthält jedes Release eine `macos.zip`. Entpacken und **light_md** in den Ordner Programme ziehen. Da die App noch nicht von Apple signiert ist, blockiert macOS sie beim ersten Start: **Systemeinstellungen → Datenschutz & Sicherheit** öffnen und **Trotzdem öffnen** klicken.

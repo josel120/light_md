@@ -24,6 +24,7 @@ Escribe a la izquierda y ve el resultado formateado a la derecha, al instante. �
 - Al abrir la app vuelve al último documento, justo donde lo dejaste (cursor y desplazamiento), y recuerda ese punto en cada documento reciente.
 - Texto más grande o más pequeño en los dos paneles con Ctrl + rueda del ratón o Ctrl+Más / Ctrl+Menos (Ctrl+0 vuelve al tamaño normal). El tamaño se recuerda.
 - No pierdes tu trabajo: unos segundos después de cada cambio, light_md guarda una copia de recuperación. Si la app o el ordenador se cierran de golpe, la próxima vez te ofrece recuperar los cambios sin guardar.
+- El panel de escritura se lee mejor: los títulos se ven más grandes, la **negrita** y la *cursiva* se notan, los enlaces y el código destacan y las citas se atenúan. Los símbolos de Markdown siguen visibles, en un color más suave, y los colores siguen el tema.
 - Contador de palabras y aviso de cambios sin guardar, también al cerrar la ventana.
 - Botón **Check for updates** (buscar actualizaciones): avisa cuando hay una versión nueva y descarga el archivo adecuado para tu sistema.
 - **macOS** (13 Ventura o posterior): desde la versión 1.3 hay un `macos.zip` en cada release. Descomprímelo y arrastra **light_md** a Aplicaciones. Como aún no está firmada por Apple, la primera vez macOS la bloquea: abre **Ajustes del Sistema → Privacidad y seguridad** y pulsa **Abrir igualmente**.

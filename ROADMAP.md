@@ -7,12 +7,21 @@ Each open item links to its GitHub issue; write "Closes #N" in a pull request to
 
 ## In progress
 
-Order agreed on 2026-11-24, one at a time:
+Order agreed on 2026-11-25, one at a time, one pull request each:
 
-1. [x] Synchronized scrolling between the editor and the preview → moved to Done (1.4)
-2. [x] Dark theme on Windows and macOS → moved to Done (1.4)
-3. [x] Reopen the last document on start and remember the cursor position → moved to Done (1.4)
-4. [x] Adjustable font size (Ctrl + mouse wheel, Ctrl+Plus / Ctrl+Minus) → moved to Done (1.4)
+1. [x] Syntax highlighting in the editor (#11)
+2. [ ] Paste pictures from the clipboard (#12)
+3. [ ] Split `src/main.cpp` into smaller files (#19)
+4. [ ] Automated tests for the formatting functions (#20)
+5. [ ] Tabs to keep several documents open (#13)
+6. [ ] Export to HTML (#14)
+7. [ ] Interface in Spanish, Portuguese, French and German (#15)
+8. [ ] Spell checker (#16)
+9. [ ] Distraction-free mode (#17)
+10. [ ] Outline panel to jump between titles (#18)
+11. [ ] Windows installer that registers `.md` files (#21)
+
+Need a person: testing on a real Mac (#22), signing with an Apple Developer ID (#23) and publishing releases (#9).
 
 ## Done
 
@@ -53,10 +62,10 @@ Order agreed on 2026-11-24, one at a time:
 
 ### Version 1.5 (in progress)
 - [x] Autosave and recovery after a crash: a copy of unsaved changes is kept every few seconds, and offered back after a crash ([#10](https://github.com/josel120/light_md/issues/10))
+- [x] Syntax highlighting in the editor: bigger titles, bold, italic, links, code, lists, checklists and dimmed quotes, in the colors of the current theme ([#11](https://github.com/josel120/light_md/issues/11))
 
 ## Next
 
-- [ ] Syntax highlighting in the editor (titles bigger, bold in bold, links in color) ([#11](https://github.com/josel120/light_md/issues/11))
 - [ ] Paste pictures from the clipboard (saved next to the document) ([#12](https://github.com/josel120/light_md/issues/12))
 
 ## Later

@@ -9,6 +9,8 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets PrintSupport Network)
 qt_standard_project_setup()
 
 qt_add_executable(light_md
+    src/highlighter.cpp
+    src/highlighter.h
     src/main.cpp
     src/theme.cpp
     src/theme.h
