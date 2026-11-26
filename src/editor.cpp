@@ -6,9 +6,49 @@
 #include <QCoreApplication>
 #include <QFont>
 #include <QMenu>
+#include <QScrollBar>
 #include <QTextBlock>
 #include <QTextLayout>
 #include <memory>
+
+void MarkdownEditor::setCentered(bool centered)
+{
+    if (m_centered == centered)
+        return;
+    m_centered = centered;
+    // No border around the page either.
+    setFrameShape(centered ? QFrame::NoFrame : QFrame::StyledPanel);
+    updateMargins();
+}
+
+void MarkdownEditor::resizeEvent(QResizeEvent *event)
+{
+    QPlainTextEdit::resizeEvent(event);
+    updateMargins();
+}
+
+void MarkdownEditor::changeEvent(QEvent *event)
+{
+    QPlainTextEdit::changeEvent(event);
+    // Bigger text means a wider column.
+    if (event->type() == QEvent::FontChange)
+        updateMargins();
+}
+
+// About 70 characters a line, the width books and newspapers use, centered; the space on the
+// sides stays empty paper (the margins are part of the viewport's background).
+void MarkdownEditor::updateMargins()
+{
+    if (!m_centered) {
+        setViewportMargins(0, 0, 0, 0);
+        return;
+    }
+    const int column = fontMetrics().horizontalAdvance(QStringLiteral("n")) * 70;
+    const int scrollBar = verticalScrollBar()->isVisible() ? verticalScrollBar()->width() : 0;
+    const int side = qMax(16, (width() - scrollBar - column) / 2);
+    const int top = qMin(64, height() / 12);
+    setViewportMargins(side, top, side, 0);
+}
 
 // Right-clicking a word with the red wave puts its corrections, and "Add to dictionary", above
 // the usual Cut / Copy / Paste.

@@ -20,7 +20,7 @@ Order agreed on 2026-11-25, one at a time, one pull request each:
 Then (2026-11-25, nobody had claimed them): spell checker (#16), distraction-free mode (#17), outline panel (#18), Windows installer (#21), in that order.
 
 8. [x] Spell checker (#16)
-9. [ ] Distraction-free mode (#17)
+9. [x] Distraction-free mode (#17)
 10. [ ] Outline panel to jump between titles (#18)
 11. [ ] Windows installer that registers .md files (#21)
 
@@ -73,6 +73,7 @@ Need a person: testing on a real Mac (#22), signing with an Apple Developer ID (
 - [x] Export to HTML (one self-contained page, pictures embedded) and to `.odt` for Word, LibreOffice and Google Docs ([#14](https://github.com/josel120/light_md/issues/14))
 - [x] Interface in English, Spanish, Portuguese, French and German: follows the system language, Options → Language to change it ([#15](https://github.com/josel120/light_md/issues/15))
 - [x] Spell checker (Hunspell) in the five interface languages: red wave under misspelled words, corrections and "Add to dictionary" on right-click, code and addresses skipped; Options → Spelling picks the language or switches it off ([#16](https://github.com/josel120/light_md/issues/16))
+- [x] Distraction-free mode (F11): full screen with only the writing pane, the text in a centered column; Esc or F11 leaves ([#17](https://github.com/josel120/light_md/issues/17))
 
 ## Next
 
@@ -81,7 +82,6 @@ Nothing queued; the items below are being worked through in the order listed und
 ## Later
 
 - [ ] Export to `.docx` (needs a library or converter; `.odt` already opens in Word)
-- [ ] Distraction-free mode (full screen, editor only) ([#17](https://github.com/josel120/light_md/issues/17))
 - [ ] Outline panel to jump between titles ([#18](https://github.com/josel120/light_md/issues/18))
 
 ## Engineering

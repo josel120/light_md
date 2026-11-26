@@ -272,6 +272,14 @@ Escreva à **esquerda** e veja o resultado à *direita*.
         <translation>Mostrar ou ocultar as barras de botões</translation>
     </message>
     <message>
+        <source>&amp;Distraction-free</source>
+        <translation>Sem &amp;distrações</translation>
+    </message>
+    <message>
+        <source>Full screen with only your text; Esc leaves</source>
+        <translation>Tela cheia só com o seu texto; Esc para sair</translation>
+    </message>
+    <message>
         <source>S&amp;ync scrolling</source>
         <translation>Rolagem sin&amp;cronizada</translation>
     </message>

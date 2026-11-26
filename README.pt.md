@@ -36,6 +36,7 @@ Escreva à esquerda e veja o resultado formatado à direita, na hora. Nunca usou
 - Atalhos: **Ctrl+Shift+B** mostrar ou ocultar os botões, **Ctrl+E** editar, **Ctrl+R** / **Esc** só leitura; o restante está em Options (tabela em [README.md](README.md)).
 - Botão Help (ajuda) com um guia curto.
 - Corretor ortográfico em inglês, espanhol, português, francês e alemão: palavras com erro ganham uma onda vermelha, e o clique direito oferece correções ou adiciona a palavra ao seu dicionário. Código e endereços web não são verificados. Escolha o idioma ou desligue em **Opções → Ortografia**.
+- Modo **sem distrações** (**F11**): tela cheia só com o seu texto, numa coluna confortável no centro. Esc ou F11 traz tudo de volta.
 
 Veja [ROADMAP.md](ROADMAP.md) (em inglês) para saber o que já está pronto e o que vem a seguir.
 

@@ -22,6 +22,7 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFileOpenEvent>
+#include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QImage>
 #include <QInputDialog>
@@ -261,22 +262,45 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
     // Back to the tab the user was in, so that is the one reopened in front next time.
     switchToTab(indexOf(current));
+    // The normal window size is the one to remember, not full screen. (Leaving full screen
+    // finishes later on macOS, so take the size from before it started.)
+    const bool fromFocus = m_distractionFree;
+    setDistractionFree(false);
     for (const auto &tab : m_tabs)
         rememberPosition(tab.get());
     rememberOpenTabs();
-    QSettings().setValue(QStringLiteral("geometry"), saveGeometry());
+    QSettings().setValue(QStringLiteral("geometry"), fromFocus ? m_geometryBeforeFocus : saveGeometry());
     // A normal close (saved, or "Don't save") leaves nothing to recover.
     for (const auto &tab : m_tabs)
         clearRecovery(tab.get());
     event->accept();
 }
 
+void MainWindow::changeEvent(QEvent *event)
+{
+    QMainWindow::changeEvent(event);
+    if (event->type() != QEvent::WindowStateChange || !m_distractionFree)
+        return;
+    // Left full screen some other way (the green button on macOS, a window manager key):
+    // bring the rest of the window back too. The offscreen platform the tests use doesn't keep
+    // the full-screen state at all, so it is left out.
+    if (windowState() & Qt::WindowFullScreen)
+        m_sawFullScreen = true;
+    else if (m_sawFullScreen && QGuiApplication::platformName() != QStringLiteral("offscreen"))
+        setDistractionFree(false);
+}
+
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
-    // Esc first closes the find bar; otherwise it returns to Reader. Dialogs are modal,
-    // so they keep their own Esc.
+    // Esc first closes the find bar, then leaves distraction-free mode; otherwise it returns
+    // to Reader. Dialogs are modal, so they keep their own Esc.
     if (event->key() == Qt::Key_Escape && m_findBar->isVisible()) {
         m_findBar->closeBar();
+        event->accept();
+        return;
+    }
+    if (event->key() == Qt::Key_Escape && m_distractionFree) {
+        setDistractionFree(false);
         event->accept();
         return;
     }
@@ -368,6 +392,9 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 QAction *MainWindow::addOption(QMenu *menu, const QString &text, const QString &tip, const QKeySequence &keys)
 {
     auto *action = menu->addAction(text);
+    // Attached to the window too while distraction-free mode hides the menu bar, so its
+    // shortcut still works then (see setDistractionFree).
+    m_menuActions.append(action);
     action->setStatusTip(tip);
     action->setToolTip(tip);
     action->setShortcutContext(Qt::ApplicationShortcut);
@@ -462,6 +489,19 @@ void MainWindow::buildMenus()
                                     QKeySequence(QStringLiteral("Ctrl+Shift+B")));
     m_showButtonsAction->setCheckable(true);
     m_showButtonsAction->setChecked(true);
+
+    m_distractionFreeAction = addOption(options, tr("&Distraction-free"),
+                                        tr("Full screen with only your text; Esc leaves"),
+                                        QKeySequence(Qt::Key_F11));
+    m_distractionFreeAction->setCheckable(true);
+    // F11 everywhere, plus the system's own full-screen keys (Ctrl+Cmd+F on macOS).
+    QList<QKeySequence> focusKeys{QKeySequence(Qt::Key_F11)};
+    for (const QKeySequence &keys : QKeySequence::keyBindings(QKeySequence::FullScreen)) {
+        if (!focusKeys.contains(keys))
+            focusKeys.append(keys);
+    }
+    m_distractionFreeAction->setShortcuts(focusKeys);
+    connect(m_distractionFreeAction, &QAction::triggered, this, [this](bool on) { setDistractionFree(on); });
 
     m_syncScrollAction = addOption(options, tr("S&ync scrolling"),
                                    tr("Scroll the writing pane and the preview together"),
@@ -721,9 +761,9 @@ void MainWindow::setShowButtons(bool show)
 {
     m_showButtons = show;
     if (m_fileBar)
-        m_fileBar->setVisible(show);
+        m_fileBar->setVisible(show && !m_distractionFree);
     if (m_formatBar)
-        m_formatBar->setVisible(show && m_editMode);
+        m_formatBar->setVisible(show && m_editMode && !m_distractionFree);
     if (m_showButtonsAction && m_showButtonsAction->isChecked() != show) {
         QSignalBlocker blocker(m_showButtonsAction);
         m_showButtonsAction->setChecked(show);
@@ -734,13 +774,16 @@ void MainWindow::setShowButtons(bool show)
 
 void MainWindow::setEditMode(bool editing)
 {
+    // Reader hides the writing pane, which is all distraction-free mode shows.
+    if (!editing && m_distractionFree)
+        setDistractionFree(false);
     if (m_editMode == editing && m_editor->isVisible() == editing) {
         if (m_editAction && m_editAction->isChecked() != editing) {
             QSignalBlocker blocker(m_editAction);
             m_editAction->setChecked(editing);
         }
         if (m_formatBar)
-            m_formatBar->setVisible(m_showButtons && editing);
+            m_formatBar->setVisible(m_showButtons && editing && !m_distractionFree);
         return;
     }
     // Coming back from Reader, keep the part the user was reading: the preview leads.
@@ -754,7 +797,7 @@ void MainWindow::setEditMode(bool editing)
     if (m_formatMenu)
         m_formatMenu->setEnabled(editing);
     if (m_formatBar)
-        m_formatBar->setVisible(m_showButtons && editing);
+        m_formatBar->setVisible(m_showButtons && editing && !m_distractionFree);
     if (m_editAction && m_editAction->isChecked() != editing) {
         QSignalBlocker blocker(m_editAction);
         m_editAction->setChecked(editing);
@@ -779,6 +822,57 @@ void MainWindow::setEditMode(bool editing)
     }
     QSettings().setValue(QStringLiteral("ui/editMode"), editing);
     updateStatus();
+}
+
+void MainWindow::setDistractionFree(bool on)
+{
+    if (m_distractionFreeAction && m_distractionFreeAction->isChecked() != on) {
+        QSignalBlocker blocker(m_distractionFreeAction);
+        m_distractionFreeAction->setChecked(on);
+    }
+    if (m_distractionFree == on)
+        return;
+    if (on) {
+        m_editModeBeforeFocus = m_editMode;
+        m_windowStateBeforeFocus = windowState();
+        m_geometryBeforeFocus = saveGeometry();
+        m_sawFullScreen = false;
+        if (!m_editMode)
+            setEditMode(true);
+    }
+    m_distractionFree = on;
+    // A hidden menu bar takes its shortcuts with it; the window holds them meanwhile. Only
+    // meanwhile: otherwise they would also work where the menu is disabled (Reader mode).
+    for (QAction *action : std::as_const(m_menuActions)) {
+        if (on)
+            addAction(action);
+        else
+            removeAction(action);
+    }
+    // Buttons, tabs, preview, status line and menu go; only the writing pane stays. The tab
+    // bar would show itself again when a tab opens, so its auto-hiding is paused meanwhile.
+    m_fileBar->setVisible(!on && m_showButtons);
+    m_formatBar->setVisible(!on && m_showButtons && m_editMode);
+    m_tabBar->setAutoHide(!on);
+    if (on)
+        m_tabBar->hide();
+    m_preview->setVisible(!on);
+    m_status->setVisible(!on);
+    menuBar()->setVisible(!on);
+    if (on)
+        m_findBar->closeBar();
+    centralWidget()->layout()->setContentsMargins(on ? QMargins() : QMargins(8, 8, 8, 8));
+    for (const auto &tab : m_tabs)
+        tab->editor->setCentered(on);
+    if (on) {
+        showFullScreen();
+    } else {
+        setWindowState(m_windowStateBeforeFocus & ~Qt::WindowFullScreen);
+        if (!m_editModeBeforeFocus)
+            setEditMode(false);
+        updatePreview();
+    }
+    m_editor->setFocus(Qt::ShortcutFocusReason);
 }
 
 void MainWindow::changeTextSize(int steps)

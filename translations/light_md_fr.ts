@@ -272,6 +272,14 @@ Write on the **left** and see the result on the *right*.
         <translation>Afficher ou masquer les barres de boutons</translation>
     </message>
     <message>
+        <source>&amp;Distraction-free</source>
+        <translation>Sans &amp;distraction</translation>
+    </message>
+    <message>
+        <source>Full screen with only your text; Esc leaves</source>
+        <translation>Plein écran avec seulement votre texte ; Échap pour quitter</translation>
+    </message>
+    <message>
         <source>S&amp;ync scrolling</source>
         <translation>Défilement s&amp;ynchronisé</translation>
     </message>

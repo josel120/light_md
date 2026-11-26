@@ -80,6 +80,7 @@ DocumentTab *MainWindow::addTab()
     tab->highlighter->setStyle(editor->palette(), m_editorBaseSize + m_textSize);
     editor->speller = m_speller.get();
     editor->addWord = [this](const QString &word) { addToDictionary(word); };
+    editor->setCentered(m_distractionFree);
 
     connect(editor, &QPlainTextEdit::textChanged, this, [this, editor] {
         // Not restarted on every key, so a long typing session still gets a recovery copy.

@@ -18,6 +18,7 @@ Write on the left, see the formatted result on the right. Format with the button
 
 - **Classic layout by default**: file and format button bars plus write + preview panes.
 - Toggle **Show buttons** (**Ctrl+Shift+B**) for a minimal Options-only chrome.
+- **Distraction-free** mode (**F11**): full screen with only your text, in a comfortable column in the middle. Esc or F11 brings everything back.
 - Optional **Reader** mode (**Ctrl+E** / **Ctrl+R** / **Esc**) hides the writing pane; independent of the button bars.
 - Button visibility and the last Edit/Reader view are remembered across restarts and when opening another file.
 - **Options** menu in everyday words: New, Open, Save, Format, Theme, Help — every item has a shortcut.
@@ -47,6 +48,7 @@ See [ROADMAP.md](ROADMAP.md) for what is done and what is coming next.
 | Show / hide buttons | Ctrl+Shift+B |
 | Edit document | Ctrl+E |
 | Read only | Ctrl+R or Esc |
+| Distraction-free (full screen, only the text) | F11 (Esc leaves) |
 | New tab / Open / Save / Save as | Ctrl+N / Ctrl+O / Ctrl+S / Ctrl+Shift+S |
 | Close tab / Next tab / Previous tab | Ctrl+W / Ctrl+Tab / Ctrl+Shift+Tab |
 | Export PDF / Print | Ctrl+Shift+E / Ctrl+P |

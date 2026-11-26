@@ -272,6 +272,14 @@ Schreibe **links** und sieh das Ergebnis *rechts*.
         <translation>Die Schaltflächenleisten ein- oder ausblenden</translation>
     </message>
     <message>
+        <source>&amp;Distraction-free</source>
+        <translation>&amp;Ablenkungsfrei</translation>
+    </message>
+    <message>
+        <source>Full screen with only your text; Esc leaves</source>
+        <translation>Vollbild nur mit deinem Text; Esc beendet</translation>
+    </message>
+    <message>
         <source>S&amp;ync scrolling</source>
         <translation>S&amp;ynchron scrollen</translation>
     </message>

@@ -64,6 +64,7 @@ public:
 protected:
     void closeEvent(QCloseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void changeEvent(QEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -75,6 +76,8 @@ private:
     QPushButton *addMenuButton(QHBoxLayout *bar, const QString &text, const QString &tip, QMenu *menu);
     void setShowButtons(bool show);
     void setEditMode(bool editing);
+    // Full screen with only the writing pane, the text in a centered column (F11 / Esc).
+    void setDistractionFree(bool on);
     void changeTextSize(int steps);
     void applyTextSize();
     void updateHighlighter();
@@ -179,6 +182,7 @@ private:
     QAction *m_editAction = nullptr;
     QAction *m_showButtonsAction = nullptr;
     QAction *m_syncScrollAction = nullptr;
+    QAction *m_distractionFreeAction = nullptr;
     QMenu *m_formatMenu = nullptr;
     QMenu *m_recentMenu = nullptr;
     FindBar *m_findBar = nullptr;
@@ -194,6 +198,14 @@ private:
     QString m_filePath;
     bool m_editMode = true;
     bool m_showButtons = true;
+    // Distraction-free mode, and what to go back to when it ends.
+    bool m_distractionFree = false;
+    bool m_editModeBeforeFocus = true;
+    Qt::WindowStates m_windowStateBeforeFocus;
+    QByteArray m_geometryBeforeFocus;
+    bool m_sawFullScreen = false;
+    // Every menu action with a shortcut-able entry (see addOption).
+    QList<QAction *> m_menuActions;
     bool m_syncScroll = true;
     bool m_syncingScroll = false;
     // True when the user last scrolled, clicked or typed in the reading pane; that pane then
