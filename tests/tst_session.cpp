@@ -6,6 +6,7 @@
 #include <QAction>
 #include <QApplication>
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
 #include <QLabel>
@@ -61,6 +62,34 @@ private:
         window.resize(900, 600);
         window.show();
         QVERIFY(QTest::qWaitForWindowExposed(&window));
+    }
+
+    // Answers the next message box as soon as it shows up, however long that takes (a fixed
+    // delay is too short on a slow CI machine, and an unanswered box waits forever).
+    static void answerNextBox(const std::function<void(QMessageBox *)> &answer)
+    {
+        auto *timer = new QTimer;
+        auto *clock = new QElapsedTimer;
+        clock->start();
+        QObject::connect(timer, &QTimer::timeout, [timer, clock, answer] {
+            auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget());
+            if (!box && clock->elapsed() < 30000)
+                return;
+            timer->stop();
+            timer->deleteLater();
+            delete clock;
+            if (box)
+                answer(box);
+        });
+        timer->start(20);
+    }
+
+    static void clickButton(QMessageBox *box, const QString &text)
+    {
+        for (QAbstractButton *button : box->buttons()) {
+            if (button->text() == text)
+                button->click();
+        }
     }
 
 private slots:
@@ -230,14 +259,7 @@ private slots:
             delete window;
         }
         // The next start asks once; answer Restore.
-        QTimer::singleShot(200, [] {
-            if (auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget())) {
-                for (QAbstractButton *button : box->buttons()) {
-                    if (button->text() == QStringLiteral("Restore"))
-                        button->click();
-                }
-            }
-        });
+        answerNextBox([](QMessageBox *box) { clickButton(box, QStringLiteral("Restore")); });
         MainWindow window(&themes);
         showWindow(window);
         QTRY_COMPARE(tabCount(window), 2);
@@ -270,14 +292,7 @@ private slots:
         QVERIFY(second->writeRecovery(second->currentTab()));
         delete first;
         delete second;
-        QTimer::singleShot(200, [] {
-            if (auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget())) {
-                for (QAbstractButton *button : box->buttons()) {
-                    if (button->text() == QStringLiteral("Restore"))
-                        button->click();
-                }
-            }
-        });
+        answerNextBox([](QMessageBox *box) { clickButton(box, QStringLiteral("Restore")); });
         MainWindow window(&themes);
         showWindow(window);
         QTRY_COMPARE(tabCount(window), 2);
@@ -305,11 +320,9 @@ private slots:
         showWindow(window);
         window.m_editor->insertPlainText(QStringLiteral("keep me "));
         // While "Save changes?" is up, another document opens (from Finder, say); then Save.
-        QTimer::singleShot(200, [&window, other] {
-            if (auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget())) {
-                window.loadFile(other);
-                box->button(QMessageBox::Save)->click();
-            }
+        answerNextBox([&window, other](QMessageBox *box) {
+            window.loadFile(other);
+            box->button(QMessageBox::Save)->click();
         });
         QVERIFY(window.closeTab(0));
         QCOMPARE(tabCount(window), 1);
