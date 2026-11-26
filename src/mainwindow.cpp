@@ -201,7 +201,19 @@ MainWindow::MainWindow(ThemeManager *themes, const QString &initialFile)
     // After the window is on screen: a big dictionary takes a moment to load.
     QTimer::singleShot(0, this, [this] {
         const QString spelling = spellingLanguage();
-        if (spelling != QStringLiteral("off") && m_speller->setLanguage(spelling))
+        if (spelling == QStringLiteral("off"))
+            return;
+        bool loaded = m_speller->setLanguage(spelling);
+        // Not picked by the user (just the interface language) and no dictionary for it, as on
+        // Linux with only some system dictionaries installed: English, if that one is there.
+        const bool chosen = !QSettings().value(QStringLiteral("spelling")).toString().isEmpty();
+        if (!loaded && !chosen && spelling != QStringLiteral("en"))
+            loaded = m_speller->setLanguage(QStringLiteral("en"));
+        // The menu shows the language actually in use, or Off.
+        const QString inUse = loaded ? m_speller->language() : QStringLiteral("off");
+        for (QAction *action : m_spellingGroup->actions())
+            action->setChecked(action->data().toString() == inUse);
+        if (loaded)
             rehighlightAll();
     });
     // After the window is on screen, so the question appears in front of it.

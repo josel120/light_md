@@ -120,6 +120,39 @@ private slots:
         QVERIFY(!wavy(2, 2));
     }
 
+    void pictureAddressesWithBracketsAreNotChecked()
+    {
+        show(QStringLiteral("![becuase](<Photo (copy) becuase.png>) ![x](a_(becuase).png)"));
+        QVERIFY(wavy(0, 4));
+        QVERIFY(!wavy(0, 27));
+        QVERIFY(!wavy(0, 48));
+    }
+
+    void curlyApostrophesMatchAddedWords()
+    {
+        QVERIFY(speller.addWord(QStringLiteral("Zorb’works")));
+        SpellChecker later;
+        QVERIFY(later.setLanguage(QStringLiteral("en")));
+        QVERIFY(later.isCorrect(QStringLiteral("Zorb’works")));
+        QVERIFY(later.isCorrect(QStringLiteral("Zorb'works")));
+    }
+
+    void wordsAddedInAnotherWindowAreKept()
+    {
+        SpellChecker first;
+        SpellChecker second;
+        QVERIFY(first.setLanguage(QStringLiteral("en")));
+        QVERIFY(second.setLanguage(QStringLiteral("en")));
+        QVERIFY(first.addWord(QStringLiteral("Zorbworks")));
+        QVERIFY(second.addWord(QStringLiteral("Quindle")));
+        SpellChecker later;
+        QVERIFY(later.setLanguage(QStringLiteral("en")));
+        QVERIFY(later.isCorrect(QStringLiteral("Zorbworks")));
+        QVERIFY(later.isCorrect(QStringLiteral("Quindle")));
+        // The second window picked up the first one's word as well.
+        QVERIFY(second.isCorrect(QStringLiteral("Zorbworks")));
+    }
+
     void linkTextIsChecked()
     {
         show(QStringLiteral("[becuase](https://example.com)"));

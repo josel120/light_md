@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QLockFile>
 #include <QSaveFile>
 #include <QStandardPaths>
 #include <QTextStream>
@@ -54,17 +55,8 @@ QByteArray hunspellPath(const QString &path)
 } // namespace
 
 SpellChecker::SpellChecker()
+    : m_personal(readPersonal())
 {
-    QFile file(QDir(userFolder()).filePath(QStringLiteral("personal.txt")));
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QTextStream in(&file);
-        in.setEncoding(QStringConverter::Utf8);
-        while (!in.atEnd()) {
-            const QString word = in.readLine().trimmed();
-            if (!word.isEmpty())
-                m_personal.append(word);
-        }
-    }
 }
 
 SpellChecker::~SpellChecker() = default;
@@ -154,14 +146,13 @@ bool SpellChecker::isCorrect(const QString &word) const
 {
     if (!m_hunspell || word.isEmpty())
         return true;
-    if (const auto cached = m_cache.constFind(word); cached != m_cache.constEnd())
+    // The same spelling for looking up, remembering and caching (Zorb’works = Zorb'works).
+    const QString plain = canonical(word);
+    if (const auto cached = m_cache.constFind(plain); cached != m_cache.constEnd())
         return *cached;
-    // Typographic apostrophes (l’eau, don’t) are spelled with ' in the dictionaries.
-    QString plain = word;
-    plain.replace(QChar(0x2019), QLatin1Char('\''));
     // A word the dictionary's character set can't even write is not ours to judge.
     const bool correct = !representable(plain) || m_hunspell->spell(encode(plain).toStdString());
-    m_cache.insert(word, correct);
+    m_cache.insert(plain, correct);
     return correct;
 }
 
@@ -170,8 +161,7 @@ QStringList SpellChecker::suggestions(const QString &word, int limit) const
     QStringList result;
     if (!m_hunspell)
         return result;
-    QString plain = word;
-    plain.replace(QChar(0x2019), QLatin1Char('\''));
+    const QString plain = canonical(word);
     if (!representable(plain))
         return result;
     for (const std::string &suggestion : m_hunspell->suggest(encode(plain).toStdString())) {
@@ -184,21 +174,62 @@ QStringList SpellChecker::suggestions(const QString &word, int limit) const
 
 bool SpellChecker::addWord(const QString &word)
 {
-    const QString clean = word.trimmed();
-    if (clean.isEmpty() || m_personal.contains(clean))
+    const QString clean = canonical(word);
+    if (clean.isEmpty())
         return true;
     if (!QDir().mkpath(userFolder()))
         return false;
-    // Rewritten whole, so a failed write never leaves half a list.
-    QSaveFile file(QDir(userFolder()).filePath(QStringLiteral("personal.txt")));
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    // Another light_md window may have added words since this one read the list: take the
+    // list as it is on disk now, add to it, and hold a lock meanwhile so neither loses a word.
+    QLockFile lock(QDir(userFolder()).filePath(QStringLiteral("personal.lock")));
+    lock.setStaleLockTime(5000);
+    if (!lock.tryLock(3000))
         return false;
-    const QByteArray bytes = (QStringList(m_personal) << clean).join(QLatin1Char('\n')).toUtf8() + '\n';
-    if (file.write(bytes) != bytes.size() || !file.commit())
-        return false;
-    m_personal.append(clean);
-    if (m_hunspell && representable(clean))
-        m_hunspell->add(encode(clean).toStdString());
-    m_cache.insert(clean, true);
+    QStringList words = readPersonal();
+    for (const QString &mine : std::as_const(m_personal)) {
+        if (!words.contains(mine))
+            words.append(mine);
+    }
+    if (!words.contains(clean)) {
+        words.append(clean);
+        // Rewritten whole, so a failed write never leaves half a list.
+        QSaveFile file(QDir(userFolder()).filePath(QStringLiteral("personal.txt")));
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+            return false;
+        const QByteArray bytes = words.join(QLatin1Char('\n')).toUtf8() + '\n';
+        if (file.write(bytes) != bytes.size() || !file.commit())
+            return false;
+    }
+    for (const QString &added : std::as_const(words)) {
+        if (!m_personal.contains(added) && m_hunspell && representable(added))
+            m_hunspell->add(encode(added).toStdString());
+    }
+    m_personal = words;
+    // Words from the other window count now too; the caller re-checks the text.
+    m_cache.clear();
     return true;
+}
+
+QString SpellChecker::canonical(const QString &word)
+{
+    // Typographic apostrophes (l’eau, don’t) are spelled with ' in the dictionaries.
+    QString plain = word.trimmed();
+    plain.replace(QChar(0x2019), QLatin1Char('\''));
+    return plain;
+}
+
+QStringList SpellChecker::readPersonal()
+{
+    QStringList words;
+    QFile file(QDir(userFolder()).filePath(QStringLiteral("personal.txt")));
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+        in.setEncoding(QStringConverter::Utf8);
+        while (!in.atEnd()) {
+            const QString word = canonical(in.readLine());
+            if (!word.isEmpty() && !words.contains(word))
+                words.append(word);
+        }
+    }
+    return words;
 }
