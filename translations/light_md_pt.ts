@@ -689,6 +689,44 @@ Choose a different name, or close that tab first.</source>
 
 Escolha outro nome ou feche essa aba primeiro.</translation>
     </message>
+    <message numerus="yes">
+        <source>Saved, and %n picture(s) copied next to the new document.</source>
+        <translation>
+            <numerusform>Salvo, e %n imagem copiada junto ao novo documento.</numerusform>
+            <numerusform>Salvo, e %n imagens copiadas junto ao novo documento.</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>and %n more</source>
+        <translation>
+            <numerusform>e mais %n</numerusform>
+            <numerusform>e mais %n</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Pictures from elsewhere</source>
+        <translation>Imagens de outros lugares</translation>
+    </message>
+    <message>
+        <source>This document shows pictures from other places on your computer:
+
+%1
+
+Put them in the exported file too? Anyone who gets the file will see them.</source>
+        <translation>Este documento mostra imagens de outros lugares do seu computador:
+
+%1
+
+Incluí-las também no arquivo exportado? Quem receber o arquivo poderá vê-las.</translation>
+    </message>
+    <message>
+        <source>Include them</source>
+        <translation>Incluí-las</translation>
+    </message>
+    <message>
+        <source>Leave them out</source>
+        <translation>Deixá-las de fora</translation>
+    </message>
     <message>
         <source>Export to PDF</source>
         <translation>Exportar para PDF</translation>

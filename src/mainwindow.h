@@ -141,7 +141,14 @@ private:
     bool saveDocument();
     QString suggestedPath(const QString &extension) const;
     bool saveDocumentAs();
+    void copyPictures(const QString &from, const QString &to);
     void exportPdf();
+    // After a file dialog: back to the tab that asked (a document opened from Finder meanwhile
+    // can switch tabs). False if that tab is gone.
+    bool backToTab(DocumentTab *tab);
+    // Before an export: asks whether to include pictures from outside the document's folder.
+    // False when the user cancels; `include` gets the answer (false when there are none).
+    bool askAboutOutsidePictures(const QString &markdown, const QString &folder, bool *include);
     QString exportPath(const QString &title, const QString &extension, const QString &filter);
     void exportHtml();
     void exportOdt();
