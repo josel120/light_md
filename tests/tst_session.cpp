@@ -270,6 +270,35 @@ private slots:
             window.clearRecovery(tab.get());
     }
 
+    void notNowKeepsTheCopiesForNextTime()
+    {
+        QSettings().clear();
+        writeDocument(3);
+        ThemeManager themes;
+        {
+            auto *window = new MainWindow(&themes, m_path);
+            showWindow(*window);
+            window->m_editor->insertPlainText(QStringLiteral("unsaved "));
+            QVERIFY(window->writeRecovery(window->currentTab()));
+            delete window;
+        }
+        // Esc (or "Not now") decides nothing.
+        answerNextBox([](QMessageBox *box) { QTest::keyClick(box, Qt::Key_Escape); });
+        {
+            MainWindow window(&themes);
+            showWindow(window);
+            QTest::qWait(300);
+            QVERIFY(!window.m_editor->document()->isModified());
+        }
+        // So the next start offers them again.
+        answerNextBox([](QMessageBox *box) { clickButton(box, QStringLiteral("Restore")); });
+        MainWindow window(&themes);
+        showWindow(window);
+        QTRY_VERIFY(window.m_editor->toPlainText().startsWith(QStringLiteral("unsaved ")));
+        for (const auto &tab : window.m_tabs)
+            window.clearRecovery(tab.get());
+    }
+
     void twoCopiesOfOneDocumentGetTwoTabs()
     {
         QSettings().clear();

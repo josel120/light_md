@@ -110,7 +110,9 @@ void MainWindow::switchToTab(int index)
 
     m_previewLeads = tab->previewLeads;
     updatePreview();
-    if (m_previewLeads)
+    // The preview goes back to where this tab left it, unless the writing pane leads and the
+    // panes scroll together (then the preview follows the writing pane anyway).
+    if (!m_syncScroll || m_previewLeads)
         setScrollRatio(m_preview->verticalScrollBar(), tab->previewScroll);
     // Opened in the background at startup: scroll its writing pane once it can be laid out.
     if (tab->pendingEditorScroll >= 0) {

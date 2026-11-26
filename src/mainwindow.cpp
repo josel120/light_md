@@ -1137,25 +1137,89 @@ bool MainWindow::saveDocumentAs()
             start = path;
             continue;
         }
-        return writeTo(path);
+        const QString oldFolder = m_filePath.isEmpty() ? QString() : QFileInfo(m_filePath).absolutePath();
+        if (!writeTo(path))
+            return false;
+        copyPictures(oldFolder, QFileInfo(path).absolutePath());
+        return true;
     }
+}
+
+// Saved in another folder: pictures given relative to the document ("images/a.png", where pasted
+// pictures go) are copied along, so the new copy still shows them. The originals stay where they
+// are, and a file already at the new place is never overwritten.
+void MainWindow::copyPictures(const QString &from, const QString &to)
+{
+    if (from.isEmpty() || QFileInfo(from).canonicalFilePath() == QFileInfo(to).canonicalFilePath())
+        return;
+    int copied = 0;
+    for (const QString &name : Export::relativePictures(m_editor->toPlainText(), from)) {
+        const QString target = QDir(to).filePath(name);
+        if (QFileInfo::exists(target) || !QDir().mkpath(QFileInfo(target).absolutePath()))
+            continue;
+        if (QFile::copy(QDir(from).filePath(name), target))
+            ++copied;
+    }
+    if (copied > 0)
+        m_status->setText(tr("Saved, and %n picture(s) copied next to the new document.", nullptr, copied));
+}
+
+bool MainWindow::backToTab(DocumentTab *tab)
+{
+    const int index = indexOf(tab);
+    if (index < 0)
+        return false;
+    switchToTab(index);
+    return true;
+}
+
+bool MainWindow::askAboutOutsidePictures(const QString &markdown, const QString &folder, bool *include)
+{
+    *include = false;
+    const QStringList outside = Export::outsidePictures(markdown, folder);
+    if (outside.isEmpty())
+        return true;
+    QStringList shown = outside.mid(0, 5);
+    if (outside.size() > shown.size())
+        shown.append(tr("and %n more", nullptr, int(outside.size() - shown.size())));
+    QMessageBox box(QMessageBox::Question, tr("Pictures from elsewhere"),
+                    tr("This document shows pictures from other places on your computer:\n\n%1\n\n"
+                       "Put them in the exported file too? Anyone who gets the file will see them.")
+                        .arg(shown.join(QLatin1Char('\n'))),
+                    QMessageBox::NoButton, this);
+    QPushButton *yes = box.addButton(tr("Include them"), QMessageBox::AcceptRole);
+    QPushButton *no = box.addButton(tr("Leave them out"), QMessageBox::DestructiveRole);
+    QPushButton *cancel = box.addButton(tr("Cancel"), QMessageBox::RejectRole);
+    box.setDefaultButton(no);
+    box.setEscapeButton(cancel);
+    box.exec();
+    if (box.clickedButton() != yes && box.clickedButton() != no)
+        return false;
+    *include = box.clickedButton() == yes;
+    return true;
 }
 
 void MainWindow::exportPdf()
 {
+    DocumentTab *tab = currentTab();
     QString path = QFileDialog::getSaveFileName(this, tr("Export to PDF"),
                                                 suggestedPath(QStringLiteral(".pdf")),
                                                 tr("PDF document (*.pdf)"));
-    if (path.isEmpty())
+    if (path.isEmpty() || !backToTab(tab))
         return;
     if (QFileInfo(path).suffix().compare(QStringLiteral("pdf"), Qt::CaseInsensitive) != 0)
         path += QStringLiteral(".pdf");
-    updatePreview();
+    const QString markdown = m_editor->toPlainText();
+    const QString folder = m_filePath.isEmpty() ? QString() : QFileInfo(m_filePath).absolutePath();
+    bool includeOutside = false;
+    if (!askAboutOutsidePictures(markdown, folder, &includeOutside))
+        return;
     QPrinter printer(QPrinter::HighResolution);
     printer.setOutputFormat(QPrinter::PdfFormat);
     printer.setOutputFileName(path);
     printer.setPageMargins(QMarginsF(20, 20, 20, 20), QPageLayout::Millimeter);
-    m_preview->document()->print(&printer);
+    // Laid out like the reading pane, with the pictures that may be shared.
+    Export::shareableDocument(markdown, folder, includeOutside, m_preview->document()->defaultFont())->print(&printer);
     if (!QFileInfo::exists(path)) {
         QMessageBox::warning(this, tr("Could not export"),
                              tr("Could not create the PDF:\n%1").arg(path));
@@ -1179,13 +1243,18 @@ QString MainWindow::exportPath(const QString &title, const QString &extension, c
 
 void MainWindow::exportHtml()
 {
+    DocumentTab *tab = currentTab();
     const QString path = exportPath(tr("Export to HTML"), QStringLiteral(".html"),
                                     tr("Web page (*.html *.htm)"));
-    if (path.isEmpty())
+    if (path.isEmpty() || !backToTab(tab))
         return;
     const QString title = m_filePath.isEmpty() ? tr("Document") : QFileInfo(m_filePath).completeBaseName();
     const QString folder = m_filePath.isEmpty() ? QString() : QFileInfo(m_filePath).absolutePath();
-    const QByteArray bytes = Export::standaloneHtml(m_editor->toPlainText(), title, folder).toUtf8();
+    const QString markdown = m_editor->toPlainText();
+    bool includeOutside = false;
+    if (!askAboutOutsidePictures(markdown, folder, &includeOutside))
+        return;
+    const QByteArray bytes = Export::standaloneHtml(markdown, title, folder, includeOutside).toUtf8();
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) {
         QMessageBox::warning(this, tr("Could not export"),
@@ -1195,21 +1264,28 @@ void MainWindow::exportHtml()
     m_status->setText(tr("Web page created: %1").arg(QDir::toNativeSeparators(path)));
 }
 
-// OpenDocument text: Word, LibreOffice and Google Docs all open it. Pictures come from the preview.
+// OpenDocument text: Word, LibreOffice and Google Docs all open it.
 void MainWindow::exportOdt()
 {
+    DocumentTab *tab = currentTab();
     const QString path = exportPath(tr("Export for Word"), QStringLiteral(".odt"),
                                     tr("OpenDocument text (*.odt)"));
-    if (path.isEmpty())
+    if (path.isEmpty() || !backToTab(tab))
         return;
-    updatePreview();
+    const QString markdown = m_editor->toPlainText();
+    const QString folder = m_filePath.isEmpty() ? QString() : QFileInfo(m_filePath).absolutePath();
+    bool includeOutside = false;
+    if (!askAboutOutsidePictures(markdown, folder, &includeOutside))
+        return;
+    const auto document =
+        Export::shareableDocument(markdown, folder, includeOutside, m_preview->document()->defaultFont());
     // Built in memory first, then written in one go: a full disk or a failed write leaves the
     // previous file as it was. (Qt's writer doesn't report every write error, and closes the
     // device itself, so it can't write to the QSaveFile directly.)
     QBuffer buffer;
     buffer.open(QIODevice::WriteOnly);
     QTextDocumentWriter writer(&buffer, "odf");
-    const bool built = writer.write(m_preview->document()) && !buffer.data().isEmpty();
+    const bool built = writer.write(document.get()) && !buffer.data().isEmpty();
     QSaveFile file(path);
     if (!built || !file.open(QIODevice::WriteOnly) || file.write(buffer.data()) != buffer.data().size()
         || !file.commit()) {
