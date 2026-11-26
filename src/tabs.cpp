@@ -9,6 +9,7 @@
 
 #include <QAction>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QScrollBar>
 #include <QSettings>
@@ -19,7 +20,45 @@
 #include <QTextDocument>
 #include <QTimer>
 
-#include <filesystem>
+#ifdef Q_OS_WIN
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#else
+#include <sys/stat.h>
+#endif
+
+namespace {
+
+// Which file on disk `path` is (its volume and file number), so two spellings of one file
+// (Notes.md and notes.md on Windows, a link) compare equal. Empty when it can't be told.
+// Asked of the system directly rather than through std::filesystem, which needs a newer C++
+// runtime than some Windows machines (and CI) have first on their PATH.
+QByteArray fileIdentity(const QString &path)
+{
+#ifdef Q_OS_WIN
+    const HANDLE file = CreateFileW(reinterpret_cast<LPCWSTR>(QDir::toNativeSeparators(path).utf16()), 0,
+                                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr,
+                                    OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+    if (file == INVALID_HANDLE_VALUE)
+        return QByteArray();
+    BY_HANDLE_FILE_INFORMATION info;
+    const bool known = GetFileInformationByHandle(file, &info);
+    CloseHandle(file);
+    if (!known)
+        return QByteArray();
+    return QByteArray::number(qulonglong(info.dwVolumeSerialNumber)) + ':'
+        + QByteArray::number((qulonglong(info.nFileIndexHigh) << 32) | info.nFileIndexLow);
+#else
+    struct stat info;
+    if (::stat(QFile::encodeName(path).constData(), &info) != 0)
+        return QByteArray();
+    return QByteArray::number(qulonglong(info.st_dev)) + ':' + QByteArray::number(qulonglong(info.st_ino));
+#endif
+}
+
+} // namespace
 
 DocumentTab *MainWindow::addTab()
 {
@@ -172,11 +211,12 @@ int MainWindow::indexOfFile(const QString &path) const
     // Asking the filesystem keeps Notes.md and notes.md apart where they are two files.
     if (!QFileInfo::exists(clean))
         return -1;
-    const std::filesystem::path wanted = QFileInfo(clean).filesystemFilePath();
+    const QByteArray wanted = fileIdentity(clean);
+    if (wanted.isEmpty())
+        return -1;
     for (int i = 0; i < int(m_tabs.size()); ++i) {
         const QString open = m_tabs[i]->filePath;
-        std::error_code error;
-        if (!open.isEmpty() && std::filesystem::equivalent(QFileInfo(open).filesystemFilePath(), wanted, error))
+        if (!open.isEmpty() && fileIdentity(open) == wanted)
             return i;
     }
     return -1;
