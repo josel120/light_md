@@ -480,6 +480,31 @@ private slots:
         QCOMPARE(window.m_outline->headings().size(), 5);
     }
 
+    void outlineFindsTheRightTitleWhenThePreviewDisagrees()
+    {
+        QSettings().clear();
+        QString filler;
+        for (int i = 0; i < 40; ++i)
+            filler += QStringLiteral("Line %1\n\n").arg(i);
+        // A title in HTML only the preview sees, and a repeated title.
+        const QString text = QStringLiteral("<h1>Only in the preview</h1>\n\n") + filler + QStringLiteral("# Notes\n\n")
+            + filler + QStringLiteral("# Pointers (T*)\n\n") + filler + QStringLiteral("# Notes\n\n") + filler;
+        ThemeManager themes;
+        MainWindow window(&themes);
+        showWindow(window);
+        window.m_editor->setPlainText(text);
+        window.updatePreview();
+        const QList<Outline::Heading> headings = window.m_outline->headings();
+        QCOMPARE(headings.size(), 3);
+        for (int i : {1, 2}) {
+            window.goToHeading(i, headings.at(i).line);
+            const QTextBlock top = window.m_preview->cursorForPosition(QPoint(5, 5)).block();
+            QCOMPARE(top.text(), headings.at(i).text);
+            // The second "Notes" is below "Pointers", not the first one.
+            QVERIFY(top.blockNumber() > 40 * i);
+        }
+    }
+
     void outlineCanBeHiddenAndStaysHidden()
     {
         QSettings().clear();

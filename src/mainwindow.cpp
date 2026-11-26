@@ -110,6 +110,8 @@ MainWindow::MainWindow(ThemeManager *themes, const QString &initialFile)
     m_outerSplitter->addWidget(m_splitter);
     m_outerSplitter->setStretchFactor(0, 0);
     m_outerSplitter->setStretchFactor(1, 1);
+    // Hidden only with Show outline: a panel dragged shut would stay shut when shown again.
+    m_outerSplitter->setCollapsible(0, false);
     m_outerSplitter->setCollapsible(1, false);
     m_outerSplitter->setSizes({190, 1100});
     root->addWidget(m_outerSplitter, 1);
@@ -876,20 +878,27 @@ void MainWindow::goToHeading(int index, int line)
         m_editor->setFocus(Qt::ShortcutFocusReason);
     }
 
-    // The same title in the preview: the index-th one, unless the two disagree on how many
-    // titles there are (HTML, titles inside quotes...), then the first with the same text.
+    // The same title in the preview. Both sides are compared by their text, never by position
+    // alone (the source and the preview can disagree on what is a title): the index-th one if
+    // its text matches, otherwise the same occurrence of that text (the 2nd "Notes" for the
+    // 2nd "Notes" in the outline).
+    const QList<Outline::Heading> &headings = m_outline->headings();
+    const QString text = headings.value(index).text;
+    int occurrence = 0;
+    for (int i = 0; i < index && i < headings.size(); ++i)
+        occurrence += headings.at(i).text == text ? 1 : 0;
     QList<QTextBlock> titles;
     for (QTextBlock b = m_preview->document()->begin(); b.isValid(); b = b.next()) {
         if (b.blockFormat().headingLevel() > 0)
             titles.append(b);
     }
+    const auto sameText = [&](const QTextBlock &title) { return Outline::plainText(title.text()) == text; };
     QTextBlock target;
-    if (titles.size() == m_outline->headings().size() && index < titles.size()) {
+    if (titles.size() == headings.size() && index < titles.size() && sameText(titles.at(index))) {
         target = titles.at(index);
     } else {
-        const QString text = m_outline->headings().value(index).text;
         for (const QTextBlock &title : std::as_const(titles)) {
-            if (title.text().simplified() == text) {
+            if (sameText(title) && occurrence-- == 0) {
                 target = title;
                 break;
             }

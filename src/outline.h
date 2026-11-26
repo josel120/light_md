@@ -20,8 +20,13 @@ struct Heading
     }
 };
 
-// "# Title" lines and underlined titles (=== or --- below a line), leaving out code blocks.
+// "# Title" lines (also inside quotes) and underlined titles (=== or --- below a paragraph),
+// leaving out code blocks.
 QList<Heading> headings(const QString &markdown);
+
+// A title's text as the reader sees it: [text](address) becomes text, and paired formatting
+// symbols (**, *, _, `, ~~) go. Also used to compare with the preview's titles.
+QString plainText(QString text);
 
 } // namespace Outline
 
