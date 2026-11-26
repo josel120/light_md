@@ -65,6 +65,7 @@ public:
 protected:
     void closeEvent(QCloseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void changeEvent(QEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -145,7 +146,14 @@ private:
     bool saveDocument();
     QString suggestedPath(const QString &extension) const;
     bool saveDocumentAs();
+    void copyPictures(const QString &from, const QString &to);
     void exportPdf();
+    // After a file dialog: back to the tab that asked (a document opened from Finder meanwhile
+    // can switch tabs). False if that tab is gone.
+    bool backToTab(DocumentTab *tab);
+    // Before an export: asks whether to include pictures from outside the document's folder.
+    // False when the user cancels; `include` gets the answer (false when there are none).
+    bool askAboutOutsidePictures(const QString &markdown, const QString &folder, bool *include);
     QString exportPath(const QString &title, const QString &extension, const QString &filter);
     void exportHtml();
     void exportOdt();
@@ -203,6 +211,10 @@ private:
     bool m_distractionFree = false;
     bool m_editModeBeforeFocus = true;
     Qt::WindowStates m_windowStateBeforeFocus;
+    QByteArray m_geometryBeforeFocus;
+    bool m_sawFullScreen = false;
+    // Every menu action with a shortcut-able entry (see addOption).
+    QList<QAction *> m_menuActions;
     bool m_syncScroll = true;
     bool m_syncingScroll = false;
     // True when the user last scrolled, clicked or typed in the reading pane; that pane then

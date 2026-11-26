@@ -9,64 +9,95 @@ namespace Outline {
 
 namespace {
 
-// The title as the reader sees it: no **, *, _, `, ~~, and [text](address) becomes text.
-QString plainText(QString text)
+QString withoutCarriageReturn(QString line)
 {
-    static const QRegularExpression imageOrLinkRe(QStringLiteral("!?\\[([^\\]]*)\\]\\([^)]*\\)"));
-    static const QRegularExpression markRe(QStringLiteral("(\\*\\*|__|~~|`|\\*|(?<!\\w)_|_(?!\\w))"));
-    text.replace(imageOrLinkRe, QStringLiteral("\\1"));
-    text.remove(markRe);
-    return text.simplified();
+    if (line.endsWith(QLatin1Char('\r')))
+        line.chop(1);
+    return line;
 }
 
 } // namespace
 
+QString plainText(QString text)
+{
+    // Only symbols that come in pairs are formatting; a lone * ("Pointers (T*)") is text.
+    static const QRegularExpression imageOrLinkRe(QStringLiteral("!?\\[([^\\]]*)\\]\\([^)]*\\)"));
+    static const QRegularExpression codeRe(QStringLiteral("`+([^`]*)`+"));
+    static const QRegularExpression strongRe(QStringLiteral("(\\*\\*|__)(?=\\S)(.+?)(?<=\\S)\\1"));
+    static const QRegularExpression emphasisRe(QStringLiteral("(?<![\\w*])([*_])(?=\\S)(.+?)(?<=\\S)\\1(?![\\w*])"));
+    static const QRegularExpression strikeRe(QStringLiteral("~~(.+?)~~"));
+    text.replace(imageOrLinkRe, QStringLiteral("\\1"));
+    text.replace(codeRe, QStringLiteral("\\1"));
+    text.replace(strongRe, QStringLiteral("\\2"));
+    text.replace(emphasisRe, QStringLiteral("\\2"));
+    text.replace(strikeRe, QStringLiteral("\\1"));
+    return text.simplified();
+}
+
 QList<Heading> headings(const QString &markdown)
 {
-    static const QRegularExpression fenceRe(QStringLiteral("^ {0,3}(`{3,}|~{3,})"));
+    static const QRegularExpression fenceRe(QStringLiteral("^ {0,3}(`{3,}|~{3,})(.*)$"));
+    static const QRegularExpression quoteRe(QStringLiteral("^ {0,3}(?:> ?)+"));
     // "# Title", optionally closed with #s ("## Title ##").
     static const QRegularExpression atxRe(QStringLiteral("^ {0,3}(#{1,6})(?:[ \\t]+(.*?))?(?:[ \\t]+#+)?[ \\t]*$"));
     static const QRegularExpression setextRe(QStringLiteral("^ {0,3}(=+|-+)[ \\t]*$"));
+    // A separator line (*** or - - -), which is never the text of a title.
+    static const QRegularExpression ruleRe(QStringLiteral("^ {0,3}([-*_])(?:[ \\t]*\\1){2,}[ \\t]*$"));
     // Lines that can't be the text of an underlined title: lists, quotes, tables, indented code.
     static const QRegularExpression notParagraphRe(
         QStringLiteral("^(?: {4}|\\t| {0,3}(?:[-*+]|\\d{1,9}[.)])(?:[ \\t]|$)| {0,3}>| {0,3}#|\\s*\\|)"));
+
+    // A line that opens a code block: ``` or ~~~, and after ``` no other backtick
+    // (```code``` at the start of a line is inline code).
+    const auto opensFence = [](const QRegularExpressionMatch &m) {
+        return m.hasMatch() && !(m.captured(1).at(0) == QLatin1Char('`') && m.captured(2).contains(QLatin1Char('`')));
+    };
+    // Lines that can be part of the paragraph an underline turns into a title.
+    const auto paragraphLine = [&](const QString &line) {
+        return !line.trimmed().isEmpty() && !notParagraphRe.match(line).hasMatch() && !opensFence(fenceRe.match(line))
+            && !setextRe.match(line).hasMatch() && !ruleRe.match(line).hasMatch();
+    };
 
     QList<Heading> result;
     const QStringList lines = markdown.split(QLatin1Char('\n'));
     QString fence;
     for (int i = 0; i < lines.size(); ++i) {
-        QString line = lines.at(i);
-        if (line.endsWith(QLatin1Char('\r')))
-            line.chop(1);
+        const QString line = withoutCarriageReturn(lines.at(i));
         const QRegularExpressionMatch fenceMatch = fenceRe.match(line);
         if (!fence.isEmpty()) {
             if (fenceMatch.hasMatch() && fenceMatch.captured(1).at(0) == fence.at(0)
-                && fenceMatch.capturedLength(1) >= fence.size()
-                && line.trimmed().size() == fenceMatch.capturedLength(1))
+                && fenceMatch.capturedLength(1) >= fence.size() && fenceMatch.captured(2).trimmed().isEmpty())
                 fence.clear();
             continue;
         }
-        if (fenceMatch.hasMatch()) {
+        if (opensFence(fenceMatch)) {
             fence = fenceMatch.captured(1);
             continue;
         }
-        const QRegularExpressionMatch atx = atxRe.match(line);
+        // Titles inside quotes ("> # Notes") are titles in the preview too.
+        const QRegularExpressionMatch quote = quoteRe.match(line);
+        const QString content = quote.hasMatch() ? line.mid(quote.capturedEnd(0)) : line;
+        const QRegularExpressionMatch atx = atxRe.match(content);
         if (atx.hasMatch()) {
             result.append({int(atx.capturedLength(1)), plainText(atx.captured(2)), i});
             continue;
         }
-        // An underline turns the line above into a title, if that line is ordinary text.
+        // An underline turns the paragraph above (one or more lines) into a title.
         const QRegularExpressionMatch setext = setextRe.match(line);
-        if (setext.hasMatch() && i > 0) {
-            QString above = lines.at(i - 1);
-            if (above.endsWith(QLatin1Char('\r')))
-                above.chop(1);
-            const bool alreadyTitle = !result.isEmpty() && result.constLast().line == i - 1;
-            if (!above.trimmed().isEmpty() && !alreadyTitle && !notParagraphRe.match(above).hasMatch()
-                && !fenceRe.match(above).hasMatch() && !setextRe.match(above).hasMatch()) {
-                result.append({setext.captured(1).at(0) == QLatin1Char('=') ? 1 : 2, plainText(above), i - 1});
-            }
-        }
+        // ("---" under text is an underline, not a separator line.)
+        if (!setext.hasMatch() || i == 0)
+            continue;
+        const bool alreadyTitle = !result.isEmpty() && result.constLast().line == i - 1;
+        if (alreadyTitle || !paragraphLine(withoutCarriageReturn(lines.at(i - 1))))
+            continue;
+        int first = i - 1;
+        while (first > 0 && paragraphLine(withoutCarriageReturn(lines.at(first - 1))))
+            --first;
+        QStringList text;
+        for (int j = first; j < i; ++j)
+            text.append(withoutCarriageReturn(lines.at(j)));
+        result.append({setext.captured(1).at(0) == QLatin1Char('=') ? 1 : 2,
+                       plainText(text.join(QLatin1Char(' '))), first});
     }
     return result;
 }

@@ -39,6 +39,8 @@ public:
     bool addWord(const QString &word);
 
 private:
+    static QString canonical(const QString &word);
+    static QStringList readPersonal();
     QByteArray encode(const QString &word) const;
     QString decode(const std::string &word) const;
     bool representable(const QString &word) const;

@@ -42,6 +42,33 @@ private slots:
         QCOMPARE(found.value(0).text, QStringLiteral("Bold and it with code and a link snake_case"));
     }
 
+    void inlineCodeAtLineStartIsNotACodeBlock()
+    {
+        const QList<Heading> found = Outline::headings(QStringLiteral("```git status``` first\n\n# Setup"));
+        QCOMPARE(found, QList<Heading>({{1, QStringLiteral("Setup"), 2}}));
+    }
+
+    void separatorLinesAreNotTitles()
+    {
+        // *** is a separator; the --- under it is another one, not an underline.
+        const QList<Heading> found = Outline::headings(QStringLiteral("***\n---\n\n# Setup\n\n> # Notes"));
+        const QList<Heading> expected{{1, QStringLiteral("Setup"), 3}, {1, QStringLiteral("Notes"), 5}};
+        QCOMPARE(found, expected);
+    }
+
+    void underlinedTitleOverSeveralLines()
+    {
+        const QList<Heading> found =
+            Outline::headings(QStringLiteral("Intro text\n\nGetting started with\nlight_md\n=====\nBody"));
+        QCOMPARE(found, QList<Heading>({{1, QStringLiteral("Getting started with light_md"), 2}}));
+    }
+
+    void loneSymbolsStayInTheTitle()
+    {
+        QCOMPARE(Outline::plainText(QStringLiteral("Pointers (T*) and **bold** a_b")),
+                 QStringLiteral("Pointers (T*) and bold a_b"));
+    }
+
     void windowsLineEndings()
     {
         QCOMPARE(Outline::headings(QStringLiteral("# One\r\ntext\r\nTwo\r\n===\r\n")).size(), 2);

@@ -276,6 +276,35 @@ private slots:
             window.clearRecovery(tab.get());
     }
 
+    void notNowKeepsTheCopiesForNextTime()
+    {
+        QSettings().clear();
+        writeDocument(3);
+        ThemeManager themes;
+        {
+            auto *window = new MainWindow(&themes, m_path);
+            showWindow(*window);
+            window->m_editor->insertPlainText(QStringLiteral("unsaved "));
+            QVERIFY(window->writeRecovery(window->currentTab()));
+            delete window;
+        }
+        // Esc (or "Not now") decides nothing.
+        answerNextBox([](QMessageBox *box) { QTest::keyClick(box, Qt::Key_Escape); });
+        {
+            MainWindow window(&themes);
+            showWindow(window);
+            QTest::qWait(300);
+            QVERIFY(!window.m_editor->document()->isModified());
+        }
+        // So the next start offers them again.
+        answerNextBox([](QMessageBox *box) { clickButton(box, QStringLiteral("Restore")); });
+        MainWindow window(&themes);
+        showWindow(window);
+        QTRY_VERIFY(window.m_editor->toPlainText().startsWith(QStringLiteral("unsaved ")));
+        for (const auto &tab : window.m_tabs)
+            window.clearRecovery(tab.get());
+    }
+
     void twoCopiesOfOneDocumentGetTwoTabs()
     {
         QSettings().clear();
@@ -387,6 +416,22 @@ private slots:
         QVERIFY(!window.m_editMode);
     }
 
+    void editingShortcutsStayOffInReader()
+    {
+        QSettings().clear();
+        ThemeManager themes;
+        MainWindow window(&themes);
+        showWindow(window);
+        window.m_editor->setPlainText(QString());
+        window.m_editor->insertPlainText(QStringLiteral("typed"));
+        // In and out of distraction-free mode once, then Reader: Ctrl+Z must not undo there.
+        window.setDistractionFree(true);
+        window.setDistractionFree(false);
+        window.setEditMode(false);
+        QTest::keyClick(&window, Qt::Key_Z, Qt::ControlModifier);
+        QCOMPARE(window.m_editor->toPlainText(), QStringLiteral("typed"));
+    }
+
     void startsFromReaderAndGoesBackToIt()
     {
         QSettings().clear();
@@ -433,6 +478,31 @@ private slots:
         cursor.insertText(QStringLiteral("# Intro\n\n"));
         window.updatePreview();
         QCOMPARE(window.m_outline->headings().size(), 5);
+    }
+
+    void outlineFindsTheRightTitleWhenThePreviewDisagrees()
+    {
+        QSettings().clear();
+        QString filler;
+        for (int i = 0; i < 40; ++i)
+            filler += QStringLiteral("Line %1\n\n").arg(i);
+        // A title in HTML only the preview sees, and a repeated title.
+        const QString text = QStringLiteral("<h1>Only in the preview</h1>\n\n") + filler + QStringLiteral("# Notes\n\n")
+            + filler + QStringLiteral("# Pointers (T*)\n\n") + filler + QStringLiteral("# Notes\n\n") + filler;
+        ThemeManager themes;
+        MainWindow window(&themes);
+        showWindow(window);
+        window.m_editor->setPlainText(text);
+        window.updatePreview();
+        const QList<Outline::Heading> headings = window.m_outline->headings();
+        QCOMPARE(headings.size(), 3);
+        for (int i : {1, 2}) {
+            window.goToHeading(i, headings.at(i).line);
+            const QTextBlock top = window.m_preview->cursorForPosition(QPoint(5, 5)).block();
+            QCOMPARE(top.text(), headings.at(i).text);
+            // The second "Notes" is below "Pointers", not the first one.
+            QVERIFY(top.blockNumber() > 40 * i);
+        }
     }
 
     void outlineCanBeHiddenAndStaysHidden()

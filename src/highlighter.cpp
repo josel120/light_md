@@ -223,7 +223,8 @@ void MarkdownHighlighter::underlineMisspelled(const QString &text, int from)
     // Not words: code, where links and pictures point, web and mail addresses, HTML tags.
     static const QRegularExpression skipRe(QStringLiteral(
         "(`+)(?!`).+?(?<!`)\\1(?!`)"          // `code`
-        "|\\]\\([^)]*\\)"                      // ](address)
+        "|\\]\\(<[^>]*>[^)]*\\)"               // ](<address with spaces (and brackets)>)
+        "|\\]\\((?:[^()]|\\([^()]*\\))*\\)"    // ](address), (one level of brackets inside)
         "|<[^>\\s]+>"                          // <https://...> and <tags>
         "|\\b(?:https?://|www\\.)\\S+"         // bare web addresses
         "|\\S+@\\S+"));                        // mail addresses
