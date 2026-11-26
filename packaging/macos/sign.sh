@@ -20,7 +20,15 @@ set -euo pipefail
 app="$1"
 zip="$2"
 
-if [ -z "${MACOS_CERTIFICATE:-}" ] || [ -z "${MACOS_SIGNING_IDENTITY:-}" ] || [ -z "${APPLE_ID:-}" ]; then
+missing=()
+for secret in MACOS_CERTIFICATE MACOS_CERTIFICATE_PASSWORD MACOS_SIGNING_IDENTITY APPLE_ID APPLE_TEAM_ID APPLE_APP_PASSWORD; do
+    [ -n "${!secret:-}" ] || missing+=("$secret")
+done
+if [ "${#missing[@]}" -gt 0 ]; then
+    # Some but not all set is a setup mistake: say which, and still produce a package.
+    if [ "${#missing[@]}" -lt 6 ]; then
+        echo "::warning::Developer ID signing skipped, missing secrets: ${missing[*]}"
+    fi
     echo "No Developer ID secrets: ad-hoc signature (users confirm the app once in System Settings)."
     codesign --force --deep --sign - "$app"
     codesign --verify --deep --strict "$app"
