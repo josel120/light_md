@@ -18,8 +18,12 @@ Escribe a la izquierda y ve el resultado formateado a la derecha, al instante. �
 - Botones con palabras sencillas: New (nuevo), Open (abrir), Save (guardar), Big title (título grande), Bold (negrita), Bullet list (lista con puntos), Quote (cita), Link (enlace), etc.
 - Abre y guarda documentos `.md`, también arrastrándolos a la ventana o con "Abrir con" desde el Explorador de archivos.
 - Buscar y reemplazar palabras (Ctrl+F, Ctrl+H), y reabrir tus últimos documentos desde el menú Recent (recientes).
+- Varios documentos abiertos en pestañas (Ctrl+N nueva, Ctrl+W cerrar, Ctrl+Tab / Ctrl+Shift+Tab para cambiar), cada uno con su propio deshacer. light_md vuelve a abrir tus pestañas la próxima vez que lo inicies.
 - Listas de tareas (Checklist) y un menú Insert (insertar) para imágenes, tablas, bloques de código y líneas separadoras. Las imágenes junto a tu documento se ven en la vista previa y en el PDF.
+- Pega una captura de pantalla o cualquier imagen con Ctrl+V: se guarda en una carpeta `images` junto a tu documento y aparece en la vista previa y en el PDF.
 - Exporta a PDF e imprime: el resultado se ve igual que el panel derecho.
+- Exporta a HTML (una sola página web con las imágenes dentro) o a `.odt` para Word, LibreOffice y Google Docs.
+- La interfaz está en español, inglés, portugués, francés y alemán. Sigue el idioma del sistema; cámbialo en **Opciones → Idioma**.
 - Deshacer y rehacer, y atajos de teclado (Ctrl+S, Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+1, Ctrl+2).
 - Al abrir la app vuelve al último documento, justo donde lo dejaste (cursor y desplazamiento), y recuerda ese punto en cada documento reciente.
 - Texto más grande o más pequeño en los dos paneles con Ctrl + rueda del ratón o Ctrl+Más / Ctrl+Menos (Ctrl+0 vuelve al tamaño normal). El tamaño se recuerda.
@@ -39,7 +43,7 @@ Consulta [ROADMAP.md](ROADMAP.md) (en inglés) para ver qué está hecho y qué 
 Hace falta Qt 6 (`Widgets` y `PrintSupport`). En Arch / [Omarchy](https://omarchy.org/):
 
 ```bash
-sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-wayland
+sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-tools qt6-wayland
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ./build/light_md

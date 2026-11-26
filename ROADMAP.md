@@ -10,16 +10,14 @@ Each open item links to its GitHub issue; write "Closes #N" in a pull request to
 Order agreed on 2026-11-25, one at a time, one pull request each:
 
 1. [x] Syntax highlighting in the editor (#11)
-2. [ ] Paste pictures from the clipboard (#12)
-3. [ ] Split `src/main.cpp` into smaller files (#19)
-4. [ ] Automated tests for the formatting functions (#20)
-5. [ ] Tabs to keep several documents open (#13)
-6. [ ] Export to HTML (#14)
-7. [ ] Interface in Spanish, Portuguese, French and German (#15)
-8. [ ] Spell checker (#16)
-9. [ ] Distraction-free mode (#17)
-10. [ ] Outline panel to jump between titles (#18)
-11. [ ] Windows installer that registers `.md` files (#21)
+2. [x] Paste pictures from the clipboard (#12)
+3. [x] Split `src/main.cpp` into smaller files (#19)
+4. [x] Automated tests for the formatting functions (#20)
+5. [x] Tabs to keep several documents open (#13)
+6. [x] Export to HTML (#14)
+7. [x] Interface in Spanish, Portuguese, French and German (#15)
+
+Open for contributors (left for friends to pick up, 2026-11-25): spell checker (#16), distraction-free mode (#17), outline panel (#18), Windows installer (#21). Comment on the issue before starting so two people don't take the same one.
 
 Need a person: testing on a real Mac (#22), signing with an Apple Developer ID (#23) and publishing releases (#9).
 
@@ -63,24 +61,26 @@ Need a person: testing on a real Mac (#22), signing with an Apple Developer ID (
 ### Version 1.5 (in progress)
 - [x] Autosave and recovery after a crash: a copy of unsaved changes is kept every few seconds, and offered back after a crash ([#10](https://github.com/josel120/light_md/issues/10))
 - [x] Syntax highlighting in the editor: bigger titles, bold, italic, links, code, lists, checklists and dimmed quotes, in the colors of the current theme ([#11](https://github.com/josel120/light_md/issues/11))
+- [x] Paste pictures from the clipboard (Ctrl+V): saved as PNG in an `images` folder next to the document; an unsaved document is saved first ([#12](https://github.com/josel120/light_md/issues/12))
+- [x] `src/main.cpp` split into smaller files: window, formatting, find bar, session and updates ([#19](https://github.com/josel120/light_md/issues/19))
+- [x] Unit tests (Qt Test) for formatting, find and replace, syntax highlighting and reopening where you left off, run by CI on every push ([#20](https://github.com/josel120/light_md/issues/20))
+- [x] Tabs: several documents open at once, each with its own undo history, unsaved marker and scroll position; the tabs come back on the next start, and crash recovery restores every tab ([#13](https://github.com/josel120/light_md/issues/13))
+- [x] Export to HTML (one self-contained page, pictures embedded) and to `.odt` for Word, LibreOffice and Google Docs ([#14](https://github.com/josel120/light_md/issues/14))
+- [x] Interface in English, Spanish, Portuguese, French and German: follows the system language, Options → Language to change it ([#15](https://github.com/josel120/light_md/issues/15))
 
 ## Next
 
-- [ ] Paste pictures from the clipboard (saved next to the document) ([#12](https://github.com/josel120/light_md/issues/12))
+Nothing queued; the items below are being worked through in the order listed under **In progress**.
 
 ## Later
 
-- [ ] Tabs to keep several documents open ([#13](https://github.com/josel120/light_md/issues/13))
-- [ ] Export to HTML (and maybe `.docx`) ([#14](https://github.com/josel120/light_md/issues/14))
-- [ ] Interface in Spanish, Portuguese, French and German (`QTranslator`) ([#15](https://github.com/josel120/light_md/issues/15))
+- [ ] Export to `.docx` (needs a library or converter; `.odt` already opens in Word)
 - [ ] Spell checker (Hunspell) ([#16](https://github.com/josel120/light_md/issues/16))
 - [ ] Distraction-free mode (full screen, editor only) ([#17](https://github.com/josel120/light_md/issues/17))
 - [ ] Outline panel to jump between titles ([#18](https://github.com/josel120/light_md/issues/18))
 
 ## Engineering
 
-- [ ] Split `src/main.cpp` into smaller files (window, formatting actions, find bar) ([#19](https://github.com/josel120/light_md/issues/19))
-- [ ] Automated tests for the formatting functions (Qt Test) ([#20](https://github.com/josel120/light_md/issues/20))
 - [ ] Windows installer (Inno Setup or MSIX) that registers `.md` files ([#21](https://github.com/josel120/light_md/issues/21))
 - [ ] Test the macOS app on a real Mac (it is built in CI but nobody has tried it yet) ([#22](https://github.com/josel120/light_md/issues/22))
 - [ ] Sign and notarize the macOS app with an Apple Developer ID, so it opens without the security warning ([#23](https://github.com/josel120/light_md/issues/23))

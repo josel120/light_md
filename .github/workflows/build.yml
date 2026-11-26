@@ -70,7 +70,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: bash
         run: |
-          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DLIGHT_MD_TESTS=ON
           cmake --build build --parallel
           cmake --install build --prefix "$(pwd -W)/dist"
           cd dist && 7z a "../light_md-${VERSION}-windows-x64.zip" .
@@ -81,7 +81,8 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+            -DLIGHT_MD_TESTS=ON
           cmake --build build --parallel
           cmake --install build --prefix "$PWD/dist"
           codesign --force --deep --sign - dist/light_md.app
@@ -94,8 +95,31 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libgl1-mesa-dev libxkbcommon-dev
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLIGHT_MD_TESTS=ON
           cmake --build build --parallel
+
+      # Unit tests (tests/), without a screen: they set QT_QPA_PLATFORM=offscreen.
+      # -V prints each test function as it runs, so a stuck one shows in the log; Qt stops a
+      # single test function after 2 minutes, before ctest's 5-minute limit for the whole file.
+      - name: Test
+        shell: bash
+        env:
+          QTEST_FUNCTION_TIMEOUT: '120000'
+        run: |
+          # On Windows the tests need the C++ runtime of the MinGW that built them, not an older
+          # libstdc++ that Git Bash or other tools put first on the PATH.
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            export PATH="$IQTA_TOOLS/mingw1310_64/bin:$QT_ROOT_DIR/bin:$PATH"
+          fi
+          ctest --test-dir build --output-on-failure -V
+
+      # The tests' own logs: they show the last test function that ran, even if ctest had to
+      # stop the program.
+      - name: Test logs
+        if: failure()
+        shell: bash
+        run: |
+          for log in build/tests/*.log; do echo "===== $log"; cat "$log"; done
 
       - name: Upload package
         if: runner.os != 'Linux'

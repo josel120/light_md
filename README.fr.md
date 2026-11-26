@@ -18,8 +18,12 @@ Un éditeur Markdown léger en C++ et Qt 6, ouvert à tous les utilisateurs.
 - Des boutons aux mots simples : New (nouveau), Open (ouvrir), Save (enregistrer), Big title (grand titre), Bold (gras), Bullet list (liste à puces), Quote (citation), Link (lien), etc.
 - Ouvre et enregistre des documents `.md`, y compris par glisser-déposer sur la fenêtre ou via « Ouvrir avec » dans l'Explorateur de fichiers.
 - Rechercher et remplacer des mots (Ctrl+F, Ctrl+H), et rouvrir vos derniers documents depuis le menu Recent (récents).
+- Plusieurs documents ouverts dans des onglets (Ctrl+N nouvel onglet, Ctrl+W fermer, Ctrl+Tab / Ctrl+Shift+Tab pour changer), chacun avec son propre historique d'annulation. light_md rouvre vos onglets au prochain démarrage.
 - Listes de tâches (Checklist) et un menu Insert (insérer) pour les images, tableaux, blocs de code et lignes de séparation. Les images placées à côté du document s'affichent dans l'aperçu et dans le PDF.
+- Collez une capture d'écran ou n'importe quelle image avec Ctrl+V : elle est enregistrée dans un dossier `images` à côté du document et apparaît dans l'aperçu et dans le PDF.
 - Export en PDF et impression : le résultat est identique au volet de droite.
+- Export en HTML (une seule page web avec les images incluses) ou en `.odt` pour Word, LibreOffice et Google Docs.
+- L'interface est en français, anglais, espagnol, portugais et allemand. Elle suit la langue du système ; changez-la dans **Options → Langue**.
 - Annuler et rétablir, plus des raccourcis clavier (Ctrl+S, Ctrl+Z, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+1, Ctrl+2).
 - Rouvre au démarrage le dernier document, exactement là où vous vous étiez arrêté (curseur et défilement), et retient cet endroit pour chaque document récent.
 - Texte plus grand ou plus petit dans les deux volets avec Ctrl + molette de la souris ou Ctrl+Plus / Ctrl+Moins (Ctrl+0 revient à la taille normale). La taille est mémorisée.
@@ -39,7 +43,7 @@ Voir [ROADMAP.md](ROADMAP.md) (en anglais) pour ce qui est fait et ce qui arrive
 Il faut Qt 6 (`Widgets` et `PrintSupport`). Sur Arch / [Omarchy](https://omarchy.org/) :
 
 ```bash
-sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-wayland
+sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-tools qt6-wayland
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ./build/light_md

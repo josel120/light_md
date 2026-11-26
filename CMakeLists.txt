@@ -4,16 +4,55 @@ project(light_md VERSION 1.3.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets PrintSupport Network)
+find_package(Qt6 REQUIRED COMPONENTS Widgets PrintSupport Network LinguistTools)
 
 qt_standard_project_setup()
 
-qt_add_executable(light_md
+# Everything except main() lives in a small library, so the unit tests can use it too.
+set(LIGHT_MD_CORE_SOURCES
+    src/editor.h
+    src/export.cpp
+    src/export.h
+    src/findbar.cpp
+    src/findbar.h
+    src/formatting.cpp
+    src/formatting.h
     src/highlighter.cpp
     src/highlighter.h
-    src/main.cpp
+    src/mainwindow.cpp
+    src/mainwindow.h
+    src/session.cpp
+    src/tabs.cpp
     src/theme.cpp
     src/theme.h
+    src/updates.cpp
+)
+qt_add_library(light_md_core STATIC ${LIGHT_MD_CORE_SOURCES})
+target_include_directories(light_md_core PUBLIC src)
+target_link_libraries(light_md_core PUBLIC Qt6::Widgets Qt6::PrintSupport Qt6::Network)
+target_compile_definitions(light_md_core PUBLIC LIGHT_MD_VERSION="${PROJECT_VERSION}")
+
+qt_add_executable(light_md
+    src/main.cpp
+)
+
+# Interface translations (translations/*.ts), built into the app and loaded at startup by language.
+# After changing texts in the code, "cmake --build build --target update_translations" refreshes the .ts files.
+# Almost all texts are in light_md_core, so it has to be scanned too: before Qt 6.7 only the
+# executable's own sources are, and every other text would be marked as gone.
+if(Qt6_VERSION VERSION_GREATER_EQUAL 6.7)
+    set(LIGHT_MD_TRANSLATED SOURCE_TARGETS light_md light_md_core)
+else()
+    set(LIGHT_MD_TRANSLATED SOURCES src/main.cpp ${LIGHT_MD_CORE_SOURCES})
+endif()
+qt_add_translations(light_md
+    ${LIGHT_MD_TRANSLATED}
+    TS_FILES
+        translations/light_md_de.ts
+        translations/light_md_es.ts
+        translations/light_md_fr.ts
+        translations/light_md_pt.ts
+    RESOURCE_PREFIX "/i18n"
 )
 
 # The icon shown on the window (Qt resource) and on the .exe in File Explorer (Windows resource).
@@ -39,14 +78,19 @@ if(APPLE)
     )
 endif()
 
-target_include_directories(light_md PRIVATE src)
-target_link_libraries(light_md PRIVATE Qt6::Widgets Qt6::PrintSupport Qt6::Network)
-target_compile_definitions(light_md PRIVATE LIGHT_MD_VERSION="${PROJECT_VERSION}")
+target_link_libraries(light_md PRIVATE light_md_core)
 
 set_target_properties(light_md PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
 )
+
+# Unit tests (Qt Test): cmake -DLIGHT_MD_TESTS=ON, then ctest. See tests/.
+option(LIGHT_MD_TESTS "Build the unit tests" OFF)
+if(LIGHT_MD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
 
 # "cmake --install build --prefix dist" creates a folder ready to copy
 # to another computer, with the Qt libraries included where deploy supports it.

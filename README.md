@@ -21,10 +21,14 @@ Write on the left, see the formatted result on the right. Format with the button
 - Optional **Reader** mode (**Ctrl+E** / **Ctrl+R** / **Esc**) hides the writing pane; independent of the button bars.
 - Button visibility and the last Edit/Reader view are remembered across restarts and when opening another file.
 - **Options** menu in everyday words: New, Open, Save, Format, Theme, Help — every item has a shortcut.
+- The interface speaks English, Spanish, Portuguese, French and German. It follows your system language; change it in **Options → Language**.
 - Open and save `.md` documents, also by dragging them onto the window or using "Open with" from the file manager.
+- Keep several documents open in tabs (Ctrl+N new tab, Ctrl+W close, Ctrl+Tab / Ctrl+Shift+Tab to switch), each with its own undo history. light_md reopens your tabs the next time you start it.
 - Find and replace words (Ctrl+F, Ctrl+H), and reopen your latest documents from the Recent menu.
 - Checklists, plus an Insert menu for pictures, tables, code blocks and separator lines. Pictures next to your document show up in the preview and the PDF.
+- Paste a screenshot or any picture with Ctrl+V: it is saved in an `images` folder next to your document and shows up in the preview and the PDF.
 - Export to PDF and print: the result looks just like the reading pane.
+- Export to HTML (a single web page with the pictures inside) or to `.odt` for Word, LibreOffice and Google Docs.
 - Reopens the document you had open last time, right where you left off (cursor and scroll), and remembers that spot for each recent document.
 - Make the text bigger or smaller in both panes with Ctrl + mouse wheel or Ctrl+Plus / Ctrl+Minus (Ctrl+0 goes back to normal). The size is remembered.
 - Never lose your work: a few seconds after each change, light_md keeps a recovery copy. If the app or the computer crashes, it offers to restore your unsaved changes the next time you open it.
@@ -42,7 +46,8 @@ See [ROADMAP.md](ROADMAP.md) for what is done and what is coming next.
 | Show / hide buttons | Ctrl+Shift+B |
 | Edit document | Ctrl+E |
 | Read only | Ctrl+R or Esc |
-| New / Open / Save / Save as | Ctrl+N / Ctrl+O / Ctrl+S / Ctrl+Shift+S |
+| New tab / Open / Save / Save as | Ctrl+N / Ctrl+O / Ctrl+S / Ctrl+Shift+S |
+| Close tab / Next tab / Previous tab | Ctrl+W / Ctrl+Tab / Ctrl+Shift+Tab |
 | Export PDF / Print | Ctrl+Shift+E / Ctrl+P |
 | Undo / Redo | Ctrl+Z / Ctrl+Shift+Z (or Ctrl+Y) |
 | Bold / Italic / Link | Ctrl+B / Ctrl+I / Ctrl+K |
@@ -74,7 +79,7 @@ The macOS and Windows packages of each release are built automatically by GitHub
 Needs Qt 6 development packages (`Widgets`, `PrintSupport` and `Network`). On Arch / [Omarchy](https://omarchy.org/):
 
 ```bash
-sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-wayland
+sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-tools qt6-wayland
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ./build/light_md
@@ -112,6 +117,20 @@ C:\Qt\Tools\CMake_64\bin\cmake.exe --install build --prefix dist
 ```
 
 Copy the whole `dist` folder and open `dist\bin\light_md.exe`.
+
+## Run the tests
+
+The formatting buttons, find and replace, the syntax highlighting and reopening a document where you left off have unit tests (Qt Test, in `tests/`). CI runs them on Windows, macOS and Linux for every push. To run them yourself, turn them on when configuring and use `ctest`:
+
+```
+cmake -S . -B build -DLIGHT_MD_TESTS=ON
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+## Translations
+
+The interface texts live in `translations/light_md_<language>.ts` (Qt Linguist files). After adding or changing a text in the code, run `cmake --build build --target update_translations` to add it to every file, then fill in the translations (with Qt Linguist or any text editor). The next build includes them.
 
 ## License
 

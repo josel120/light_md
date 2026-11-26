@@ -10,7 +10,7 @@ arch=('x86_64')
 url="https://github.com/josel120/light_md"
 license=('MIT')
 depends=('qt6-base' 'qt6-wayland')
-makedepends=('cmake' 'ninja' 'qt6-base')
+makedepends=('cmake' 'ninja' 'qt6-base' 'qt6-tools')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('a284d15e745506983e50e28ed2665158b66e9a6f23e5d9608923dcb0e5dbfad6')
 
