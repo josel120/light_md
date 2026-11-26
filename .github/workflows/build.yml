@@ -75,6 +75,19 @@ jobs:
           cmake --install build --prefix "$(pwd -W)/dist"
           cd dist && 7z a "../light_md-${VERSION}-windows-x64.zip" .
 
+      # The Windows installer (packaging/windows/light_md.iss), from the same dist folder as the
+      # zip: Start menu entry, uninstaller, and light_md registered for .md files.
+      - name: Installer (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          ISCC="/c/Program Files (x86)/Inno Setup 6/ISCC.exe"
+          if [ ! -f "$ISCC" ]; then choco install innosetup --no-progress -y; fi
+          NUMERIC=$(sed -n 's/^project(light_md VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)
+          # "-D", not "/D": Git Bash would turn "/D..." into a path.
+          "$ISCC" -Q "-DAppVersion=${VERSION}" "-DNumericVersion=${NUMERIC}" packaging/windows/light_md.iss
+          ls -l light_md-*-setup.exe
+
       # Universal app (Apple Silicon and Intel). The ad-hoc signature is needed because
       # macdeployqt changes the binaries; without it Apple Silicon Macs refuse to start the app.
       - name: Build (macOS)
@@ -126,7 +139,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: light_md-${{ env.VERSION }}-${{ matrix.name }}
-          path: light_md-*.zip
+          path: |
+            light_md-*.zip
+            light_md-*-setup.exe
 
       - name: Attach to release
         if: startsWith(github.ref, 'refs/tags/v') && runner.os != 'Linux'
@@ -139,4 +154,5 @@ jobs:
           gh release view "$VERSION" > /dev/null 2>&1 || \
             gh release create "$VERSION" --draft --title "light_md $VERSION" --notes "Release notes to be written." || true
           sleep 5
-          gh release upload "$VERSION" light_md-*.zip --clobber
+          # The installer exists only on Windows.
+          gh release upload "$VERSION" light_md-*.zip $(ls light_md-*-setup.exe 2>/dev/null) --clobber

@@ -864,6 +864,10 @@ Il a été retiré de la liste.</translation>
         <translation>Tapez votre texte ici...</translation>
     </message>
     <message>
+        <source>When the download finishes, open it: it replaces the installed light_md. Your documents are not affected.</source>
+        <translation>Une fois le téléchargement terminé, ouvrez-le : il remplace le light_md installé. Vos documents ne sont pas touchés.</translation>
+    </message>
+    <message>
         <source>When the download finishes, close light_md, unzip the file and replace the old light_md folder with the new one. Your documents are not affected.</source>
         <translation>Une fois le téléchargement terminé, fermez light_md, décompressez le fichier et remplacez l&apos;ancien dossier light_md par le nouveau. Vos documents ne sont pas touchés.</translation>
     </message>

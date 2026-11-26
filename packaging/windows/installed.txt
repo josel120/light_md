@@ -1,0 +1,2 @@
+light_md was installed with its Windows installer. "Check for updates" uses this file to offer
+the new installer instead of the zip. Uninstall light_md from Windows Settings -> Apps.
