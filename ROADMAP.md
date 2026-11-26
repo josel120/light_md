@@ -24,7 +24,9 @@ Then (2026-11-25, nobody had claimed them): spell checker (#16), distraction-fre
 10. [x] Outline panel to jump between titles (#18)
 11. [x] Windows installer that registers .md files (#21)
 
-Need a person: testing on a real Mac (#22), signing with an Apple Developer ID (#23) and publishing releases (#9).
+12. [x] Release 1.4: version 1.4.0, new screenshot, release notes; the maintainer publishes the release on GitHub (#9)
+
+Need a person: testing on a real Mac (#22) and signing with an Apple Developer ID (#23; the build already signs and notarizes once the secrets exist, see docs/macos-signing.md).
 
 ## Done
 
@@ -57,13 +59,12 @@ Need a person: testing on a real Mac (#22), signing with an Apple Developer ID (
 - [x] GitHub Actions: builds Windows, macOS and Linux on every push and attaches the Windows and macOS packages to each release
 - [x] Check for updates button (downloads the right file for your system)
 
-### Version 1.4 (in progress, release tracked in [#9](https://github.com/josel120/light_md/issues/9))
+### Version 1.4 ([#9](https://github.com/josel120/light_md/issues/9))
 - [x] Synchronized scrolling between the editor and the preview (Options → Sync scrolling turns it off)
 - [x] Dark theme for every system (Options → Theme → Dark, Ctrl+Shift+4); the title bar follows the theme too
 - [x] Reopens the last document on start, at the same cursor and scroll position (also remembered for each recent document)
 - [x] Bigger or smaller text in both panes (Ctrl + mouse wheel, Ctrl+Plus / Ctrl+Minus, Ctrl+0 for normal; Options → Text size), remembered
 
-### Version 1.5 (in progress)
 - [x] Autosave and recovery after a crash: a copy of unsaved changes is kept every few seconds, and offered back after a crash ([#10](https://github.com/josel120/light_md/issues/10))
 - [x] Syntax highlighting in the editor: bigger titles, bold, italic, links, code, lists, checklists and dimmed quotes, in the colors of the current theme ([#11](https://github.com/josel120/light_md/issues/11))
 - [x] Paste pictures from the clipboard (Ctrl+V): saved as PNG in an `images` folder next to the document; an unsaved document is saved first ([#12](https://github.com/josel120/light_md/issues/12))

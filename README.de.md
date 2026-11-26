@@ -8,7 +8,7 @@ Links schreiben, rechts sofort das formatierte Ergebnis sehen. Neu bei Markdown?
 
 ![light_md: links der Schreibbereich, rechts das formatierte Ergebnis](docs/screenshot.png)
 
-**[light_md für Windows herunterladen](https://github.com/josel120/light_md/releases/latest)**: Archiv entpacken und `bin\light_md.exe` öffnen. Keine Installation nötig. Ab der nächsten Version gibt es auch ein Installationsprogramm (`windows-x64-setup.exe`): Es trägt light_md ins Startmenü ein, bietet es für `.md`-Dateien an (unter „Öffnen mit“ und wenn Windows fragt, welche App es nehmen soll) und lässt sich unter Einstellungen → Apps deinstallieren. Keine Administratorrechte nötig.
+**[light_md für Windows herunterladen](https://github.com/josel120/light_md/releases/latest)**: Archiv entpacken und `bin\light_md.exe` öffnen. Keine Installation nötig. Es gibt auch ein Installationsprogramm (`windows-x64-setup.exe`): Es trägt light_md ins Startmenü ein, bietet es für `.md`-Dateien an (unter „Öffnen mit“ und wenn Windows fragt, welche App es nehmen soll) und lässt sich unter Einstellungen → Apps deinstallieren. Keine Administratorrechte nötig.
 
 > Die Oberfläche der Anwendung ist auf Englisch. Die Namen der Schaltflächen stehen unten so, wie sie auf dem Bildschirm erscheinen.
 

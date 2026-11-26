@@ -8,7 +8,7 @@ Un éditeur Markdown léger en C++ et Qt 6, ouvert à tous les utilisateurs.
 
 ![light_md : le volet d'écriture à gauche et le résultat mis en forme à droite](docs/screenshot.png)
 
-**[Télécharger light_md pour Windows](https://github.com/josel120/light_md/releases/latest)** : décompressez l'archive et ouvrez `bin\light_md.exe`. Rien à installer. À partir de la prochaine version, il y a aussi un installateur (`windows-x64-setup.exe`) : il ajoute light_md au menu Démarrer, le propose pour les fichiers `.md` (dans « Ouvrir avec » et quand Windows demande quelle application utiliser) et se désinstalle depuis Paramètres → Applications. Aucun droit d’administrateur nécessaire.
+**[Télécharger light_md pour Windows](https://github.com/josel120/light_md/releases/latest)** : décompressez l'archive et ouvrez `bin\light_md.exe`. Rien à installer. Il y a aussi un installateur (`windows-x64-setup.exe`) : il ajoute light_md au menu Démarrer, le propose pour les fichiers `.md` (dans « Ouvrir avec » et quand Windows demande quelle application utiliser) et se désinstalle depuis Paramètres → Applications. Aucun droit d’administrateur nécessaire.
 
 > L'interface de l'application est en anglais. Les noms des boutons sont indiqués ci-dessous tels qu'ils apparaissent à l'écran.
 
