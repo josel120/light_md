@@ -83,12 +83,12 @@ Name: "{autodesktop}\light_md"; Filename: "{app}\bin\{#ExeName}"; Tasks: desktop
 Root: HKA; Subkey: "Software\Classes\light_md.md"; ValueType: string; ValueName: ""; ValueData: "Markdown document"; Flags: uninsdeletekey; Tasks: assoc
 Root: HKA; Subkey: "Software\Classes\light_md.md\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\bin\{#ExeName},0"; Tasks: assoc
 Root: HKA; Subkey: "Software\Classes\light_md.md\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\bin\{#ExeName}"" ""%1"""; Tasks: assoc
-; light_md in "Open with" for .md and .markdown, and the default unless another program
-; already is (Windows then asks once which one to use; the user keeps the last word).
+; light_md in "Open with" for .md and .markdown. The default program stays the user's (and
+; Windows') choice: the extensions' own default is never written or removed, so another
+; editor's setting is left alone. When no program is set, Windows offers light_md the first
+; time a document is double-clicked.
 Root: HKA; Subkey: "Software\Classes\.md\OpenWithProgids"; ValueType: string; ValueName: "light_md.md"; ValueData: ""; Flags: uninsdeletevalue; Tasks: assoc
 Root: HKA; Subkey: "Software\Classes\.markdown\OpenWithProgids"; ValueType: string; ValueName: "light_md.md"; ValueData: ""; Flags: uninsdeletevalue; Tasks: assoc
-Root: HKA; Subkey: "Software\Classes\.md"; ValueType: string; ValueName: ""; ValueData: "light_md.md"; Flags: createvalueifdoesntexist uninsdeletevalue; Tasks: assoc
-Root: HKA; Subkey: "Software\Classes\.markdown"; ValueType: string; ValueName: ""; ValueData: "light_md.md"; Flags: createvalueifdoesntexist uninsdeletevalue; Tasks: assoc
 ; The program itself, for "Open with" → "Choose another app".
 Root: HKA; Subkey: "Software\Classes\Applications\{#ExeName}"; ValueType: string; ValueName: "FriendlyAppName"; ValueData: "light_md"; Flags: uninsdeletekey
 Root: HKA; Subkey: "Software\Classes\Applications\{#ExeName}\SupportedTypes"; ValueType: string; ValueName: ".md"; ValueData: ""

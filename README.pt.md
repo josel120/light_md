@@ -8,7 +8,7 @@ Escreva à esquerda e veja o resultado formatado à direita, na hora. Nunca usou
 
 ![light_md: o painel de escrita à esquerda e o resultado formatado à direita](docs/screenshot.png)
 
-**[Baixar o light_md para Windows](https://github.com/josel120/light_md/releases/latest)**: descompacte o arquivo e abra `bin\light_md.exe`. Não é preciso instalar nada. A partir da próxima versão também há um instalador (`windows-x64-setup.exe`): ele adiciona o light_md ao menu Iniciar, abre arquivos `.md` com dois cliques e pode ser desinstalado em Configurações → Aplicativos. Não precisa de permissões de administrador.
+**[Baixar o light_md para Windows](https://github.com/josel120/light_md/releases/latest)**: descompacte o arquivo e abra `bin\light_md.exe`. Não é preciso instalar nada. A partir da próxima versão também há um instalador (`windows-x64-setup.exe`): ele adiciona o light_md ao menu Iniciar, o oferece para arquivos `.md` (em “Abrir com” e quando o Windows pergunta qual aplicativo usar) e pode ser desinstalado em Configurações → Aplicativos. Não precisa de permissões de administrador.
 
 > A interface do aplicativo está em inglês. Os nomes dos botões aparecem abaixo exatamente como são exibidos na tela.
 

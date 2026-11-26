@@ -75,7 +75,7 @@ Need a person: testing on a real Mac (#22), signing with an Apple Developer ID (
 - [x] Spell checker (Hunspell) in the five interface languages: red wave under misspelled words, corrections and "Add to dictionary" on right-click, code and addresses skipped; Options → Spelling picks the language or switches it off ([#16](https://github.com/josel120/light_md/issues/16))
 - [x] Distraction-free mode (F11): full screen with only the writing pane, the text in a centered column; Esc or F11 leaves ([#17](https://github.com/josel120/light_md/issues/17))
 - [x] Outline panel: the document's titles, nested; clicking one jumps to it in both panes, it follows the typing and marks the current section; Ctrl+Shift+O hides it ([#18](https://github.com/josel120/light_md/issues/18))
-- [x] Windows installer (Inno Setup, built by CI next to the zip): Start menu entry, uninstaller, light_md registered for `.md` files, no administrator rights needed; an installed light_md offers the installer when it finds an update ([#21](https://github.com/josel120/light_md/issues/21))
+- [x] Windows installer (Inno Setup, built by CI next to the zip): Start menu entry, uninstaller, light_md offered for `.md` files in “Open with” (the default program stays the user's choice), no administrator rights needed; an installed light_md offers the installer when it finds an update ([#21](https://github.com/josel120/light_md/issues/21))
 
 ## Next
 
