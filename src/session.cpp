@@ -46,10 +46,13 @@ void MainWindow::rememberPosition(DocumentTab *tab)
         spot.insert(QStringLiteral("editorScroll"), editorScroll);
     }
     all.insert(tab->filePath, spot);
-    // Only documents still in the Recent list are worth remembering; this keeps the list short.
-    const QStringList recent = recentFiles();
+    // Only documents in the Recent list or open in a tab are worth remembering; this keeps the
+    // list short. (More than ten tabs can be open, and each reopens where it was.)
+    QStringList keep = recentFiles();
+    for (const auto &open : m_tabs)
+        keep.append(open->filePath);
     for (auto it = all.begin(); it != all.end();) {
-        if (recent.contains(it.key(), Qt::CaseInsensitive))
+        if (keep.contains(it.key(), Qt::CaseInsensitive))
             ++it;
         else
             it = all.erase(it);
@@ -227,9 +230,14 @@ void MainWindow::offerRecovery()
     QMessageBox box(QMessageBox::Question, tr("Restore unsaved changes?"), question,
                     QMessageBox::NoButton, this);
     QPushButton *restore = box.addButton(tr("Restore"), QMessageBox::AcceptRole);
-    box.addButton(tr("Discard"), QMessageBox::RejectRole);
+    QPushButton *discard = box.addButton(tr("Discard"), QMessageBox::DestructiveRole);
+    // Esc or closing the question decides nothing: the copies are offered again next time.
+    QPushButton *later = box.addButton(tr("Not now"), QMessageBox::RejectRole);
     box.setDefaultButton(restore);
+    box.setEscapeButton(later);
     box.exec();
+    if (box.clickedButton() != restore && box.clickedButton() != discard)
+        return;
 
     int extraCopies = 0;
     for (const LeftBehind &copy : copies) {

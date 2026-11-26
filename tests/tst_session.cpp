@@ -276,6 +276,35 @@ private slots:
             window.clearRecovery(tab.get());
     }
 
+    void notNowKeepsTheCopiesForNextTime()
+    {
+        QSettings().clear();
+        writeDocument(3);
+        ThemeManager themes;
+        {
+            auto *window = new MainWindow(&themes, m_path);
+            showWindow(*window);
+            window->m_editor->insertPlainText(QStringLiteral("unsaved "));
+            QVERIFY(window->writeRecovery(window->currentTab()));
+            delete window;
+        }
+        // Esc (or "Not now") decides nothing.
+        answerNextBox([](QMessageBox *box) { QTest::keyClick(box, Qt::Key_Escape); });
+        {
+            MainWindow window(&themes);
+            showWindow(window);
+            QTest::qWait(300);
+            QVERIFY(!window.m_editor->document()->isModified());
+        }
+        // So the next start offers them again.
+        answerNextBox([](QMessageBox *box) { clickButton(box, QStringLiteral("Restore")); });
+        MainWindow window(&themes);
+        showWindow(window);
+        QTRY_VERIFY(window.m_editor->toPlainText().startsWith(QStringLiteral("unsaved ")));
+        for (const auto &tab : window.m_tabs)
+            window.clearRecovery(tab.get());
+    }
+
     void twoCopiesOfOneDocumentGetTwoTabs()
     {
         QSettings().clear();
@@ -385,6 +414,22 @@ private slots:
         QTest::keyClick(window.m_editor, Qt::Key_R, Qt::ControlModifier);
         QVERIFY(!window.m_distractionFree);
         QVERIFY(!window.m_editMode);
+    }
+
+    void editingShortcutsStayOffInReader()
+    {
+        QSettings().clear();
+        ThemeManager themes;
+        MainWindow window(&themes);
+        showWindow(window);
+        window.m_editor->setPlainText(QString());
+        window.m_editor->insertPlainText(QStringLiteral("typed"));
+        // In and out of distraction-free mode once, then Reader: Ctrl+Z must not undo there.
+        window.setDistractionFree(true);
+        window.setDistractionFree(false);
+        window.setEditMode(false);
+        QTest::keyClick(&window, Qt::Key_Z, Qt::ControlModifier);
+        QCOMPARE(window.m_editor->toPlainText(), QStringLiteral("typed"));
     }
 
     void startsFromReaderAndGoesBackToIt()

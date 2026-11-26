@@ -99,9 +99,21 @@ jobs:
           cmake --build build --parallel
 
       # Unit tests (tests/), without a screen: they set QT_QPA_PLATFORM=offscreen.
+      # -V prints each test function as it runs, so a stuck one shows in the log; Qt stops a
+      # single test function after 2 minutes, before ctest's 5-minute limit for the whole file.
       - name: Test
         shell: bash
-        run: ctest --test-dir build --output-on-failure
+        env:
+          QTEST_FUNCTION_TIMEOUT: '120000'
+        run: ctest --test-dir build --output-on-failure -V
+
+      # The tests' own logs: they show the last test function that ran, even if ctest had to
+      # stop the program.
+      - name: Test logs
+        if: failure()
+        shell: bash
+        run: |
+          for log in build/tests/*.log; do echo "===== $log"; cat "$log"; done
 
       - name: Upload package
         if: runner.os != 'Linux'
