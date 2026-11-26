@@ -118,7 +118,13 @@ jobs:
         shell: bash
         env:
           QTEST_FUNCTION_TIMEOUT: '120000'
-        run: ctest --test-dir build --output-on-failure -V
+        run: |
+          # On Windows the tests need the C++ runtime of the MinGW that built them, not an older
+          # libstdc++ that Git Bash or other tools put first on the PATH.
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            export PATH="$IQTA_TOOLS/mingw1310_64/bin:$QT_ROOT_DIR/bin:$PATH"
+          fi
+          ctest --test-dir build --output-on-failure -V
 
       # The tests' own logs: they show the last test function that ran, even if ctest had to
       # stop the program.
