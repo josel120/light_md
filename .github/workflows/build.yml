@@ -98,10 +98,17 @@ jobs:
             -DLIGHT_MD_TESTS=ON
           cmake --build build --parallel
           cmake --install build --prefix "$PWD/dist"
-          codesign --force --deep --sign - dist/light_md.app
-          codesign --verify --deep --strict dist/light_md.app
           lipo -info dist/light_md.app/Contents/MacOS/light_md
-          ditto -c -k --keepParent dist/light_md.app "light_md-${VERSION}-macos.zip"
+          bash packaging/macos/sign.sh dist/light_md.app "light_md-${VERSION}-macos.zip"
+        # Signing and notarizing with the Developer ID happen only when these secrets exist
+        # (docs/macos-signing.md); otherwise the app gets an ad-hoc signature.
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
 
       - name: Build (Linux)
         if: runner.os == 'Linux'
