@@ -7,6 +7,8 @@
 #include <QGuiApplication>
 #include <QHash>
 #include <QRegularExpression>
+#include <QImage>
+#include <QTextBlock>
 #include <QTextDocument>
 #include <QUrl>
 
@@ -14,8 +16,49 @@ namespace Export {
 
 namespace {
 
+// The file a picture's `source` names on this computer, or an empty string for one on the web.
+QString localPath(const QString &source, const QString &folder)
+{
+    const QUrl url(source);
+    if (url.isLocalFile())
+        return url.toLocalFile();
+    // Relative ("images/a.png") or a Windows path ("C:/pictures/a.png", whose drive looks like a scheme).
+    if (url.scheme().isEmpty() || (url.scheme().size() == 1 && QDir::isAbsolutePath(source))) {
+        if (QDir::isAbsolutePath(source))
+            return source;
+        // Relative to nothing: an untitled document has no folder to look in.
+        return folder.isEmpty() ? QString() : QDir(folder).filePath(QUrl::fromPercentEncoding(source.toUtf8()));
+    }
+    return QString();
+}
+
+// Whether `path` is an existing file in `folder` or below.
+bool inside(const QString &path, const QString &folder)
+{
+    if (folder.isEmpty())
+        return false;
+    const QString file = QFileInfo(path).canonicalFilePath();
+    QString root = QFileInfo(folder).canonicalFilePath();
+    if (file.isEmpty() || root.isEmpty())
+        return false;
+    if (!root.endsWith(QLatin1Char('/')))
+        root += QLatin1Char('/');
+#ifdef Q_OS_WIN
+    return file.startsWith(root, Qt::CaseInsensitive);
+#else
+    return file.startsWith(root);
+#endif
+}
+
+// A picture from this computer may go into a file that gets sent: from the document's own folder,
+// or from anywhere when the user agreed (a document from someone else could name any picture).
+bool allowed(const QString &path, const QString &folder, bool includeOutside)
+{
+    return QFileInfo(path).isFile() && (includeOutside || inside(path, folder));
+}
+
 // The picture at `source` as a data: URL, or an empty string when it is not a readable file.
-QString embeddedPicture(const QString &source, const QString &folder)
+QString embeddedPicture(const QString &source, const QString &folder, bool includeOutside)
 {
     static const QHash<QString, QString> types{
         {QStringLiteral("png"), QStringLiteral("image/png")},   {QStringLiteral("jpg"), QStringLiteral("image/jpeg")},
@@ -23,37 +66,58 @@ QString embeddedPicture(const QString &source, const QString &folder)
         {QStringLiteral("bmp"), QStringLiteral("image/bmp")},   {QStringLiteral("webp"), QStringLiteral("image/webp")},
         {QStringLiteral("svg"), QStringLiteral("image/svg+xml")},
     };
-    const QUrl url(source);
-    QString path;
-    if (url.isLocalFile())
-        path = url.toLocalFile();
-    else if (url.scheme().isEmpty() || (url.scheme().size() == 1 && QDir::isAbsolutePath(source)))
-        // Relative ("images/a.png") or a Windows path ("C:/pictures/a.png", whose drive looks like a scheme).
-        path = QDir::isAbsolutePath(source) ? source : QDir(folder).filePath(QUrl::fromPercentEncoding(source.toUtf8()));
-    else
-        return QString(); // On the web: leave the link as it is.
-
-    // Only from the document's own folder: a document from someone else could name any
-    // picture on this computer, and the page is meant to be sent.
-    if (!folder.isEmpty()) {
-        const QString inside = QFileInfo(path).canonicalFilePath();
-        const QString root = QFileInfo(folder).canonicalFilePath();
-        if (inside.isEmpty() || root.isEmpty()
-            || !inside.startsWith(root.endsWith(QLatin1Char('/')) ? root : root + QLatin1Char('/'),
-#ifdef Q_OS_WIN
-                                  Qt::CaseInsensitive))
-#else
-                                  Qt::CaseSensitive))
-#endif
-            return QString();
-    }
-
+    const QString path = localPath(source, folder);
+    if (path.isEmpty() || !allowed(path, folder, includeOutside))
+        return QString(); // On the web, missing, or not to be shared: leave the link as it is.
     const QString type = types.value(QFileInfo(path).suffix().toLower());
     QFile file(path);
     if (type.isEmpty() || !file.open(QIODevice::ReadOnly))
         return QString();
     return QStringLiteral("data:%1;base64,%2").arg(type, QString::fromLatin1(file.readAll().toBase64()));
 }
+
+// The document's pictures as written in it (sources), in order.
+QStringList pictureSources(const QString &markdown)
+{
+    QTextDocument document;
+    document.setMarkdown(renderableMarkdown(markdown));
+    QStringList sources;
+    for (QTextBlock block = document.begin(); block.isValid(); block = block.next()) {
+        for (auto it = block.begin(); !it.atEnd(); ++it) {
+            const QTextCharFormat format = it.fragment().charFormat();
+            if (format.isImageFormat())
+                sources.append(format.toImageFormat().name());
+        }
+    }
+    return sources;
+}
+
+// A document that only shows the pictures allowed() lets through, for the .odt export.
+class ShareableDocument : public QTextDocument
+{
+public:
+    ShareableDocument(const QString &folder, bool includeOutside)
+        : m_folder(folder)
+        , m_includeOutside(includeOutside)
+    {
+    }
+
+protected:
+    QVariant loadResource(int type, const QUrl &name) override
+    {
+        if (type != QTextDocument::ImageResource)
+            return QTextDocument::loadResource(type, name);
+        const QString path = localPath(name.toString(), m_folder);
+        if (path.isEmpty() || !allowed(path, m_folder, m_includeOutside))
+            return QVariant();
+        const QImage image(path);
+        return image.isNull() ? QVariant() : QVariant(image);
+    }
+
+private:
+    QString m_folder;
+    bool m_includeOutside;
+};
 
 // Links that open web pages, mail or another part of the page are fine; javascript:, data:
 // and the like could run code with the page's contents, so they lose their target.
@@ -116,7 +180,47 @@ QString renderableMarkdown(const QString &markdown)
     return lines.join(QLatin1Char('\n'));
 }
 
-QString standaloneHtml(const QString &markdown, const QString &title, const QString &folder)
+QStringList outsidePictures(const QString &markdown, const QString &folder)
+{
+    QStringList outside;
+    for (const QString &source : pictureSources(markdown)) {
+        const QString path = localPath(source, folder);
+        if (!path.isEmpty() && QFileInfo(path).isFile() && !inside(path, folder)) {
+            const QString native = QDir::toNativeSeparators(QFileInfo(path).absoluteFilePath());
+            if (!outside.contains(native))
+                outside.append(native);
+        }
+    }
+    return outside;
+}
+
+QStringList relativePictures(const QString &markdown, const QString &folder)
+{
+    QStringList relative;
+    for (const QString &source : pictureSources(markdown)) {
+        const QUrl url(source);
+        if (!url.scheme().isEmpty() || QDir::isAbsolutePath(source))
+            continue;
+        const QString name = QDir::cleanPath(QUrl::fromPercentEncoding(source.toUtf8()));
+        // Only pictures inside the folder ("images/a.png"), never "../elsewhere/a.png".
+        if (name.startsWith(QStringLiteral("..")) || relative.contains(name))
+            continue;
+        if (inside(QDir(folder).filePath(name), folder))
+            relative.append(name);
+    }
+    return relative;
+}
+
+std::unique_ptr<QTextDocument> shareableDocument(const QString &markdown, const QString &folder,
+                                                 bool includeOutside, const QFont &font)
+{
+    auto document = std::make_unique<ShareableDocument>(folder, includeOutside);
+    document->setDefaultFont(font);
+    document->setMarkdown(renderableMarkdown(markdown));
+    return document;
+}
+
+QString standaloneHtml(const QString &markdown, const QString &title, const QString &folder, bool includeOutside)
 {
     QTextDocument document;
     QFont font = QGuiApplication::font();
@@ -138,7 +242,7 @@ QString standaloneHtml(const QString &markdown, const QString &title, const QStr
         // The source is HTML-escaped in the page; unescape it to find the file.
         QString source = m.captured(2);
         source.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
-        const QString data = embeddedPicture(source, folder);
+        const QString data = embeddedPicture(source, folder, includeOutside);
         embedded += html.mid(last, m.capturedStart(2) - last);
         embedded += data.isEmpty() ? m.captured(2) : data;
         last = m.capturedEnd(2);
