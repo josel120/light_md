@@ -16,6 +16,7 @@ class FindBar;
 class MarkdownEditor;
 class MarkdownHighlighter;
 class QAction;
+class QActionGroup;
 class QHBoxLayout;
 class QImage;
 class QLabel;
@@ -28,6 +29,7 @@ class QSplitter;
 class QStackedWidget;
 class QTabBar;
 class QTextBrowser;
+class SpellChecker;
 class ThemeManager;
 
 // One open document: its own writing pane (with its undo history), file and recovery copy.
@@ -55,6 +57,7 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(ThemeManager *themes, const QString &initialFile = QString());
+    ~MainWindow() override;
     // Opens `path` in a tab (switching to it if it is already open).
     bool loadFile(const QString &path);
 
@@ -114,6 +117,13 @@ private:
     void rebuildRecentMenu();
     void openRecent(const QString &file);
 
+    // Spell checking (spellcheck.h): the language picked in Options -> Spelling, otherwise the
+    // interface language. "off" switches it off.
+    static QString spellingLanguage();
+    void setSpellingLanguage(const QString &language);
+    void addToDictionary(const QString &word);
+    void rehighlightAll();
+
     // Check for updates (updates.cpp).
     static QString platformDownloadSuffix();
     static QString installSteps();
@@ -172,6 +182,8 @@ private:
     QMenu *m_formatMenu = nullptr;
     QMenu *m_recentMenu = nullptr;
     FindBar *m_findBar = nullptr;
+    std::unique_ptr<SpellChecker> m_speller;
+    QActionGroup *m_spellingGroup = nullptr;
     QNetworkAccessManager m_network;
     QNetworkReply *m_updateReply = nullptr;
     QTimer m_previewTimer;

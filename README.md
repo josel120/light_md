@@ -33,6 +33,7 @@ Write on the left, see the formatted result on the right. Format with the button
 - Make the text bigger or smaller in both panes with Ctrl + mouse wheel or Ctrl+Plus / Ctrl+Minus (Ctrl+0 goes back to normal). The size is remembered.
 - Never lose your work: a few seconds after each change, light_md keeps a recovery copy. If the app or the computer crashes, it offers to restore your unsaved changes the next time you open it.
 - The writing pane is easier to read: titles are bigger, **bold** and *italic* look the part, links and code stand out and quotes are dimmed. The Markdown symbols stay visible, in a quieter color, and the colors follow the theme.
+- Spell checking in English, Spanish, Portuguese, French and German: misspelled words get a red wave, and right-clicking one offers corrections or adds it to your dictionary. Code, links' addresses and web addresses are skipped. Pick the language or switch it off in **Options → Spelling**.
 - Word count and an unsaved-changes warning, including when closing the window.
 - **Check for updates** button: tells you when a new version is out and downloads the right file for your system.
 - Themes: **System** (desktop default), **Minimal** (quiet light look), **Dark** (soft dark look, Ctrl+Shift+4), **Omarchy** (live desktop theme on Omarchy Linux only). Windows and macOS keep **System** by default.
@@ -85,6 +86,8 @@ cmake --build build
 ./build/light_md
 ```
 
+Spell checking uses the system's Hunspell when it is installed (`sudo pacman -S hunspell`); otherwise the build downloads and compiles it. The build also downloads the dictionaries (about 13 MB). For an offline build, add `-DLIGHT_MD_DOWNLOAD_DICTIONARIES=OFF`: light_md then uses the system's dictionaries in `/usr/share/hunspell` (for example `hunspell-en_us`, `hunspell-es_es`, `hunspell-fr`, `hunspell-de`).
+
 Install for your user (binary, `.desktop` entry, and icon):
 
 ```bash
@@ -120,7 +123,7 @@ Copy the whole `dist` folder and open `dist\bin\light_md.exe`.
 
 ## Run the tests
 
-The formatting buttons, find and replace, the syntax highlighting and reopening a document where you left off have unit tests (Qt Test, in `tests/`). CI runs them on Windows, macOS and Linux for every push. To run them yourself, turn them on when configuring and use `ctest`:
+The formatting buttons, find and replace, the syntax highlighting, spell checking, exports and reopening a document where you left off have unit tests (Qt Test, in `tests/`). CI runs them on Windows, macOS and Linux for every push. To run them yourself, turn them on when configuring and use `ctest`:
 
 ```
 cmake -S . -B build -DLIGHT_MD_TESTS=ON
@@ -135,5 +138,7 @@ The interface texts live in `translations/light_md_<language>.ts` (Qt Linguist f
 ## License
 
 MIT
+
+The spell checking dictionaries and Hunspell keep their own licenses (GPL, LGPL, MPL or BSD-like); they ship as separate files. See [dictionaries/README.md](dictionaries/README.md).
 
 Omarchy theme watching follows the approach used in Omacut (MIT, David Heinemeier Hansson).

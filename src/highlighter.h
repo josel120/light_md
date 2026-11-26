@@ -4,6 +4,8 @@
 #include <QSyntaxHighlighter>
 #include <QTextCharFormat>
 
+class SpellChecker;
+
 // Colors the writing pane: titles bigger, bold in bold, italic in italic, links and code
 // set apart, quotes dimmed. The Markdown symbols stay visible, just quieter.
 //
@@ -16,6 +18,10 @@ public:
 
     // Call after a theme or text size change; re-colors only when something differs.
     void setStyle(const QPalette &palette, qreal pointSize);
+
+    // Misspelled words get a wavy underline (not in code, links' addresses or web addresses).
+    // Null, or a checker that is off, underlines nothing. Call rehighlight() after a change.
+    void setSpellChecker(const SpellChecker *speller) { m_speller = speller; }
 
 protected:
     void highlightBlock(const QString &text) override;
@@ -31,6 +37,7 @@ private:
     void buildFormats();
     void mergeFormat(int start, int count, const QTextCharFormat &format);
     void highlightInline(const QString &text, int from);
+    void underlineMisspelled(const QString &text, int from);
 
     QColor m_text;
     QColor m_link;
@@ -48,4 +55,6 @@ private:
     QTextCharFormat m_bold;
     QTextCharFormat m_italic;
     QTextCharFormat m_strike;
+    QTextCharFormat m_misspelled;
+    const SpellChecker *m_speller = nullptr;
 };

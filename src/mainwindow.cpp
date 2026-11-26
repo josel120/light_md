@@ -5,6 +5,7 @@
 #include "findbar.h"
 #include "formatting.h"
 #include "highlighter.h"
+#include "spellcheck.h"
 #include "theme.h"
 
 #include <QAbstractButton>
@@ -13,6 +14,7 @@
 #include <QActionGroup>
 #include <QCloseEvent>
 #include <QDateTime>
+#include <QDesktopServices>
 #include <QDir>
 #include <QDragEnterEvent>
 #include <QDropEvent>
@@ -27,6 +29,7 @@
 #include <QKeySequence>
 #include <QLabel>
 #include <QLineEdit>
+#include <QLocale>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -52,6 +55,7 @@
 
 MainWindow::MainWindow(ThemeManager *themes, const QString &initialFile)
     : m_themes(themes)
+    , m_speller(std::make_unique<SpellChecker>())
 {
     resize(1100, 700);
 
@@ -194,6 +198,24 @@ MainWindow::MainWindow(ThemeManager *themes, const QString &initialFile)
     setShowButtons(showButtons);
     setEditMode(editMode);
 
+    // After the window is on screen: a big dictionary takes a moment to load.
+    QTimer::singleShot(0, this, [this] {
+        const QString spelling = spellingLanguage();
+        if (spelling == QStringLiteral("off"))
+            return;
+        bool loaded = m_speller->setLanguage(spelling);
+        // Not picked by the user (just the interface language) and no dictionary for it, as on
+        // Linux with only some system dictionaries installed: English, if that one is there.
+        const bool chosen = !QSettings().value(QStringLiteral("spelling")).toString().isEmpty();
+        if (!loaded && !chosen && spelling != QStringLiteral("en"))
+            loaded = m_speller->setLanguage(QStringLiteral("en"));
+        // The menu shows the language actually in use, or Off.
+        const QString inUse = loaded ? m_speller->language() : QStringLiteral("off");
+        for (QAction *action : m_spellingGroup->actions())
+            action->setChecked(action->data().toString() == inUse);
+        if (loaded)
+            rehighlightAll();
+    });
     // After the window is on screen, so the question appears in front of it.
     QTimer::singleShot(0, this, [this] { offerRecovery(); });
 }
@@ -562,6 +584,29 @@ void MainWindow::buildMenus()
                                      tr("light_md will use the new language the next time you open it."));
         });
     }
+
+    // Spelling: off, or one of the languages light_md has a dictionary for.
+    auto *spellingMenu = options->addMenu(tr("&Spelling"));
+    m_spellingGroup = new QActionGroup(this);
+    const QString currentSpelling = spellingLanguage();
+    const QList<QPair<QString, QString>> spellings{
+        {QStringLiteral("off"), tr("Off")},  {QStringLiteral("en"), QStringLiteral("English")},
+        {QStringLiteral("es"), QStringLiteral("Español")}, {QStringLiteral("pt"), QStringLiteral("Português")},
+        {QStringLiteral("fr"), QStringLiteral("Français")}, {QStringLiteral("de"), QStringLiteral("Deutsch")},
+    };
+    for (const auto &[code, label] : spellings) {
+        QAction *action = spellingMenu->addAction(label);
+        action->setCheckable(true);
+        action->setData(code);
+        action->setChecked(code == currentSpelling);
+        m_spellingGroup->addAction(action);
+        connect(action, &QAction::triggered, this, [this, code] { setSpellingLanguage(code); });
+    }
+    spellingMenu->addSeparator();
+    spellingMenu->addAction(tr("Open my dictionaries folder"), this, [] {
+        QDir().mkpath(SpellChecker::userFolder());
+        QDesktopServices::openUrl(QUrl::fromLocalFile(SpellChecker::userFolder()));
+    });
 
     auto *actUpdates = addOption(options, tr("Check for &updates..."),
                                  tr("See if a newer version of light_md is available"),
@@ -990,6 +1035,53 @@ void MainWindow::pasteImage(const QImage &image)
     m_editor->textCursor().insertText(QStringLiteral("![%1](%2)").arg(tr("Pasted picture"), relative));
     m_editor->setFocus();
     m_status->setText(tr("Picture saved as %1").arg(QDir::toNativeSeparators(relative)));
+}
+
+MainWindow::~MainWindow() = default;
+
+QString MainWindow::spellingLanguage()
+{
+    const QString chosen = QSettings().value(QStringLiteral("spelling")).toString();
+    if (!chosen.isEmpty())
+        return chosen;
+    // Not chosen yet: the interface language, if there is a dictionary for it.
+    const QString interface = QSettings().value(QStringLiteral("language")).toString();
+    const QString language = QLocale(interface.isEmpty() ? QLocale::system().uiLanguages().value(0) : interface)
+                                 .name()
+                                 .section(QLatin1Char('_'), 0, 0);
+    return SpellChecker::languages().contains(language) ? language : QStringLiteral("en");
+}
+
+void MainWindow::setSpellingLanguage(const QString &language)
+{
+    QSettings().setValue(QStringLiteral("spelling"), language);
+    const bool on = language != QStringLiteral("off") && m_speller->setLanguage(language);
+    if (language == QStringLiteral("off"))
+        m_speller->setLanguage(QString());
+    rehighlightAll();
+    if (language != QStringLiteral("off") && !on) {
+        QMessageBox::warning(this, tr("Spelling"),
+                             tr("No dictionary for this language was found. You can put one "
+                                "(.aff and .dic files) in your dictionaries folder: %1")
+                                 .arg(QDir::toNativeSeparators(SpellChecker::userFolder())));
+    }
+}
+
+void MainWindow::addToDictionary(const QString &word)
+{
+    if (!m_speller->addWord(word)) {
+        QMessageBox::warning(this, tr("Spelling"),
+                             tr("Could not save the word in:\n%1")
+                                 .arg(QDir::toNativeSeparators(SpellChecker::userFolder())));
+        return;
+    }
+    rehighlightAll();
+}
+
+void MainWindow::rehighlightAll()
+{
+    for (const auto &tab : m_tabs)
+        tab->highlighter->rehighlight();
 }
 
 // Asks about `tab`'s unsaved changes and saves it if the user says so. A document opened while

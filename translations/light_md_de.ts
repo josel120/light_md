@@ -464,6 +464,18 @@ Schreibe **links** und sieh das Ergebnis *rechts*.
         <translation>light_md verwendet die neue Sprache beim nächsten Öffnen.</translation>
     </message>
     <message>
+        <source>&amp;Spelling</source>
+        <translation>&amp;Rechtschreibung</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Aus</translation>
+    </message>
+    <message>
+        <source>Open my dictionaries folder</source>
+        <translation>Meinen Wörterbuch-Ordner öffnen</translation>
+    </message>
+    <message>
         <source>Check for &amp;updates...</source>
         <translation>Nach &amp;Updates suchen...</translation>
     </message>
@@ -588,6 +600,20 @@ Jetzt speichern?</translation>
     <message>
         <source>Picture saved as %1</source>
         <translation>Bild gespeichert als %1</translation>
+    </message>
+    <message>
+        <source>Spelling</source>
+        <translation>Rechtschreibung</translation>
+    </message>
+    <message>
+        <source>No dictionary for this language was found. You can put one (.aff and .dic files) in your dictionaries folder: %1</source>
+        <translation>Für diese Sprache wurde kein Wörterbuch gefunden. Du kannst eines (.aff- und .dic-Dateien) in deinen Wörterbuch-Ordner legen: %1</translation>
+    </message>
+    <message>
+        <source>Could not save the word in:
+%1</source>
+        <translation>Das Wort konnte nicht gespeichert werden in:
+%1</translation>
     </message>
     <message>
         <source>Save changes</source>
@@ -876,6 +902,17 @@ Es wurde aus der Liste entfernt.</translation>
     <message>
         <source>Not now</source>
         <translation>Nicht jetzt</translation>
+    </message>
+</context>
+<context>
+    <name>MarkdownEditor</name>
+    <message>
+        <source>No suggestions</source>
+        <translation>Keine Vorschläge</translation>
+    </message>
+    <message>
+        <source>Add “%1” to the dictionary</source>
+        <translation>„%1“ zum Wörterbuch hinzufügen</translation>
     </message>
 </context>
 <context>

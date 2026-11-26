@@ -9,15 +9,20 @@ pkgdesc="Lightweight Markdown editor with live preview"
 arch=('x86_64')
 url="https://github.com/josel120/light_md"
 license=('MIT')
-depends=('qt6-base' 'qt6-wayland')
-makedepends=('cmake' 'ninja' 'qt6-base' 'qt6-tools')
+depends=('qt6-base' 'qt6-wayland' 'hunspell')
+optdepends=('hunspell-en_us: English spell checking'
+            'hunspell-es_es: Spanish spell checking'
+            'hunspell-fr: French spell checking'
+            'hunspell-de: German spell checking')
+makedepends=('cmake' 'ninja' 'pkgconf' 'qt6-base' 'qt6-tools')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('a284d15e745506983e50e28ed2665158b66e9a6f23e5d9608923dcb0e5dbfad6')
 
 build() {
   cmake -S "$srcdir/$pkgname-$pkgver" -B build -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/usr
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DLIGHT_MD_DOWNLOAD_DICTIONARIES=OFF
   cmake --build build
 }
 

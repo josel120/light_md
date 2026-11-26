@@ -35,6 +35,7 @@ Un éditeur Markdown léger en C++ et Qt 6, ouvert à tous les utilisateurs.
 - Choix du thème : **System** (bureau), **Minimal** (apparence claire et sobre), **Dark** (sombre et doux, Ctrl+Shift+4), **Omarchy** (suit le thème Omarchy sous Linux).
 - Raccourcis : **Ctrl+Shift+B** afficher ou masquer les boutons, **Ctrl+E** éditer, **Ctrl+R** / **Esc** lecture seule ; le reste est sous Options (tableau dans [README.md](README.md)).
 - Un bouton Help (aide) avec un guide court.
+- Correcteur orthographique en anglais, espagnol, portugais, français et allemand : les mots mal orthographiés sont soulignés d’une vague rouge, et un clic droit propose des corrections ou ajoute le mot à votre dictionnaire. Le code et les adresses web ne sont pas vérifiés. Choisissez la langue ou désactivez-le dans **Options → Orthographe**.
 
 Voir [ROADMAP.md](ROADMAP.md) (en anglais) pour ce qui est fait et ce qui arrive ensuite.
 

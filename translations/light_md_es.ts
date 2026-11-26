@@ -464,6 +464,18 @@ Escribe a la **izquierda** y mira el resultado a la *derecha*.
         <translation>light_md usará el nuevo idioma la próxima vez que lo abras.</translation>
     </message>
     <message>
+        <source>&amp;Spelling</source>
+        <translation>&amp;Ortografía</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Desactivada</translation>
+    </message>
+    <message>
+        <source>Open my dictionaries folder</source>
+        <translation>Abrir mi carpeta de diccionarios</translation>
+    </message>
+    <message>
         <source>Check for &amp;updates...</source>
         <translation>Buscar act&amp;ualizaciones...</translation>
     </message>
@@ -588,6 +600,20 @@ Save it now?</source>
     <message>
         <source>Picture saved as %1</source>
         <translation>Imagen guardada como %1</translation>
+    </message>
+    <message>
+        <source>Spelling</source>
+        <translation>Ortografía</translation>
+    </message>
+    <message>
+        <source>No dictionary for this language was found. You can put one (.aff and .dic files) in your dictionaries folder: %1</source>
+        <translation>No se encontró un diccionario para este idioma. Puedes poner uno (archivos .aff y .dic) en tu carpeta de diccionarios: %1</translation>
+    </message>
+    <message>
+        <source>Could not save the word in:
+%1</source>
+        <translation>No se pudo guardar la palabra en:
+%1</translation>
     </message>
     <message>
         <source>Save changes</source>
@@ -876,6 +902,17 @@ Se quitó de la lista.</translation>
     <message>
         <source>Not now</source>
         <translation>Ahora no</translation>
+    </message>
+</context>
+<context>
+    <name>MarkdownEditor</name>
+    <message>
+        <source>No suggestions</source>
+        <translation>No hay sugerencias</translation>
+    </message>
+    <message>
+        <source>Add “%1” to the dictionary</source>
+        <translation>Añadir «%1» al diccionario</translation>
     </message>
 </context>
 <context>

@@ -1,5 +1,7 @@
 #include "highlighter.h"
 
+#include "spellcheck.h"
+
 #include <QFont>
 #include <QFontDatabase>
 #include <QRegularExpression>
@@ -104,6 +106,11 @@ void MarkdownHighlighter::buildFormats()
 
     m_strike = QTextCharFormat();
     m_strike.setFontStrikeOut(true);
+
+    // The usual red wave: readable on light and dark paper alike.
+    m_misspelled = QTextCharFormat();
+    m_misspelled.setUnderlineStyle(QTextCharFormat::SpellCheckUnderline);
+    m_misspelled.setUnderlineColor(QColor(220, 50, 47));
 }
 
 // Adds `format` on top of what is already there (a bold word inside a title stays big).
@@ -206,6 +213,58 @@ void MarkdownHighlighter::highlightBlock(const QString &text)
     }
 
     highlightInline(text, inlineFrom);
+    underlineMisspelled(text, inlineFrom);
+}
+
+void MarkdownHighlighter::underlineMisspelled(const QString &text, int from)
+{
+    if (!m_speller || !m_speller->isActive())
+        return;
+    // Not words: code, where links and pictures point, web and mail addresses, HTML tags.
+    static const QRegularExpression skipRe(QStringLiteral(
+        "(`+)(?!`).+?(?<!`)\\1(?!`)"          // `code`
+        "|\\]\\(<[^>]*>[^)]*\\)"               // ](<address with spaces (and brackets)>)
+        "|\\]\\((?:[^()]|\\([^()]*\\))*\\)"    // ](address), (one level of brackets inside)
+        "|<[^>\\s]+>"                          // <https://...> and <tags>
+        "|\\b(?:https?://|www\\.)\\S+"         // bare web addresses
+        "|\\S+@\\S+"));                        // mail addresses
+    // Letters with apostrophes inside (don't, l'eau); digits or _ make it a code-like name.
+    static const QRegularExpression wordRe(QStringLiteral("[\\p{L}\\p{M}\\p{Nd}_'\\x{2019}]+"));
+
+    QString masked = text;
+    auto skipIt = skipRe.globalMatch(text, from);
+    while (skipIt.hasNext()) {
+        const QRegularExpressionMatch m = skipIt.next();
+        for (int i = m.capturedStart(0); i < m.capturedEnd(0); ++i)
+            masked[i] = QLatin1Char(' ');
+    }
+
+    auto wordIt = wordRe.globalMatch(masked, from);
+    while (wordIt.hasNext()) {
+        const QRegularExpressionMatch m = wordIt.next();
+        QString word = m.captured(0);
+        int start = m.capturedStart(0);
+        // Quotes around a word ('like this') are not part of it.
+        while (!word.isEmpty() && (word.front() == QLatin1Char('\'') || word.front() == QChar(0x2019))) {
+            word.remove(0, 1);
+            ++start;
+        }
+        while (!word.isEmpty() && (word.back() == QLatin1Char('\'') || word.back() == QChar(0x2019)))
+            word.chop(1);
+        if (word.size() < 2)
+            continue;
+        bool hasDigit = false;
+        bool allCaps = true;
+        for (const QChar c : word) {
+            hasDigit = hasDigit || c.isDigit() || c == QLatin1Char('_');
+            allCaps = allCaps && !c.isLower();
+        }
+        // Names like x86 or snake_case, and acronyms (PDF, HTML), are left alone.
+        if (hasDigit || allCaps)
+            continue;
+        if (!m_speller->isCorrect(word))
+            mergeFormat(start, word.size(), m_misspelled);
+    }
 }
 
 void MarkdownHighlighter::highlightInline(const QString &text, int from)

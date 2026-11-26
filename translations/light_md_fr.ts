@@ -464,6 +464,18 @@ Write on the **left** and see the result on the *right*.
         <translation>light_md utilisera la nouvelle langue à la prochaine ouverture.</translation>
     </message>
     <message>
+        <source>&amp;Spelling</source>
+        <translation>O&amp;rthographe</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Désactivée</translation>
+    </message>
+    <message>
+        <source>Open my dictionaries folder</source>
+        <translation>Ouvrir mon dossier de dictionnaires</translation>
+    </message>
+    <message>
         <source>Check for &amp;updates...</source>
         <translation>Rechercher des &amp;mises à jour...</translation>
     </message>
@@ -588,6 +600,20 @@ L&apos;enregistrer maintenant ?</translation>
     <message>
         <source>Picture saved as %1</source>
         <translation>Image enregistrée sous %1</translation>
+    </message>
+    <message>
+        <source>Spelling</source>
+        <translation>Orthographe</translation>
+    </message>
+    <message>
+        <source>No dictionary for this language was found. You can put one (.aff and .dic files) in your dictionaries folder: %1</source>
+        <translation>Aucun dictionnaire n&apos;a été trouvé pour cette langue. Vous pouvez en placer un (fichiers .aff et .dic) dans votre dossier de dictionnaires : %1</translation>
+    </message>
+    <message>
+        <source>Could not save the word in:
+%1</source>
+        <translation>Impossible d&apos;enregistrer le mot dans :
+%1</translation>
     </message>
     <message>
         <source>Save changes</source>
@@ -876,6 +902,17 @@ Il a été retiré de la liste.</translation>
     <message>
         <source>Not now</source>
         <translation>Pas maintenant</translation>
+    </message>
+</context>
+<context>
+    <name>MarkdownEditor</name>
+    <message>
+        <source>No suggestions</source>
+        <translation>Aucune suggestion</translation>
+    </message>
+    <message>
+        <source>Add “%1” to the dictionary</source>
+        <translation>Ajouter « %1 » au dictionnaire</translation>
     </message>
 </context>
 <context>
