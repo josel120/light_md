@@ -24,6 +24,8 @@ set(LIGHT_MD_CORE_SOURCES
     src/highlighter.h
     src/mainwindow.cpp
     src/mainwindow.h
+    src/outline.cpp
+    src/outline.h
     src/session.cpp
     src/spellcheck.cpp
     src/spellcheck.h

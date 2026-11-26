@@ -15,6 +15,7 @@
 class FindBar;
 class MarkdownEditor;
 class MarkdownHighlighter;
+class OutlinePanel;
 class QAction;
 class QActionGroup;
 class QHBoxLayout;
@@ -78,6 +79,9 @@ private:
     void setEditMode(bool editing);
     // Full screen with only the writing pane, the text in a centered column (F11 / Esc).
     void setDistractionFree(bool on);
+    // The outline panel (outline.h): shown or hidden (Ctrl+Shift+O), and clicking a title.
+    void setShowOutline(bool show);
+    void goToHeading(int index, int line);
     void changeTextSize(int steps);
     void applyTextSize();
     void updateHighlighter();
@@ -162,6 +166,10 @@ private:
     QHBoxLayout *m_fileBarLayout = nullptr;
     QHBoxLayout *m_formatBarLayout = nullptr;
     QSplitter *m_splitter = nullptr;
+    // The outline on the left, then m_splitter (writing pane | preview).
+    QSplitter *m_outerSplitter = nullptr;
+    OutlinePanel *m_outline = nullptr;
+    QAction *m_outlineAction = nullptr;
     // Tabs (tabs.cpp). m_editor and m_filePath always belong to the current tab.
     DocumentTab *addTab();
     void switchToTab(int index);
@@ -198,6 +206,7 @@ private:
     QString m_filePath;
     bool m_editMode = true;
     bool m_showButtons = true;
+    bool m_showOutline = true;
     // Distraction-free mode, and what to go back to when it ends.
     bool m_distractionFree = false;
     bool m_editModeBeforeFocus = true;

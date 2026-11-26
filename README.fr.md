@@ -36,6 +36,7 @@ Un éditeur Markdown léger en C++ et Qt 6, ouvert à tous les utilisateurs.
 - Raccourcis : **Ctrl+Shift+B** afficher ou masquer les boutons, **Ctrl+E** éditer, **Ctrl+R** / **Esc** lecture seule ; le reste est sous Options (tableau dans [README.md](README.md)).
 - Un bouton Help (aide) avec un guide court.
 - Correcteur orthographique en anglais, espagnol, portugais, français et allemand : les mots mal orthographiés sont soulignés d’une vague rouge, et un clic droit propose des corrections ou ajoute le mot à votre dictionnaire. Le code et les adresses web ne sont pas vérifiés. Choisissez la langue ou désactivez-le dans **Options → Orthographe**.
+- Panneau de **plan** à gauche : tous les titres et sous-titres, imbriqués. Cliquez sur l’un d’eux pour y aller dans les deux volets ; il suit votre saisie et indique la section où vous êtes. Masquez-le avec **Ctrl+Shift+O**.
 - Mode **sans distraction** (**F11**) : plein écran avec seulement votre texte, dans une colonne confortable au centre. Échap ou F11 fait tout revenir.
 
 Voir [ROADMAP.md](ROADMAP.md) (en anglais) pour ce qui est fait et ce qui arrive ensuite.

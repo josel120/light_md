@@ -272,6 +272,14 @@ Schreibe **links** und sieh das Ergebnis *rechts*.
         <translation>Die Schaltflächenleisten ein- oder ausblenden</translation>
     </message>
     <message>
+        <source>Show &amp;outline</source>
+        <translation>&amp;Gliederung anzeigen</translation>
+    </message>
+    <message>
+        <source>Show or hide the list of titles, to jump between them</source>
+        <translation>Die Liste der Überschriften ein- oder ausblenden, um zwischen ihnen zu springen</translation>
+    </message>
+    <message>
         <source>&amp;Distraction-free</source>
         <translation>&amp;Ablenkungsfrei</translation>
     </message>
@@ -921,6 +929,17 @@ Es wurde aus der Liste entfernt.</translation>
     <message>
         <source>Add “%1” to the dictionary</source>
         <translation>„%1“ zum Wörterbuch hinzufügen</translation>
+    </message>
+</context>
+<context>
+    <name>OutlinePanel</name>
+    <message>
+        <source>Outline</source>
+        <translation>Gliederung</translation>
+    </message>
+    <message>
+        <source>Click a title to go to it</source>
+        <translation>Klicke auf eine Überschrift, um dorthin zu springen</translation>
     </message>
 </context>
 <context>

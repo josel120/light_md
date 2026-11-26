@@ -5,6 +5,7 @@
 #include "editor.h"
 #include "findbar.h"
 #include "highlighter.h"
+#include "outline.h"
 #include "spellcheck.h"
 
 #include <QAction>
@@ -82,6 +83,11 @@ DocumentTab *MainWindow::addTab()
     editor->addWord = [this](const QString &word) { addToDictionary(word); };
     editor->setCentered(m_distractionFree);
 
+    // The outline marks the section the cursor is in.
+    connect(editor, &QPlainTextEdit::cursorPositionChanged, this, [this, editor] {
+        if (editor == m_editor)
+            m_outline->setCurrentLine(editor->textCursor().blockNumber());
+    });
     connect(editor, &QPlainTextEdit::textChanged, this, [this, editor] {
         // Not restarted on every key, so a long typing session still gets a recovery copy.
         if (!m_autosaveTimer.isActive())
