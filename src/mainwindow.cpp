@@ -22,6 +22,7 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFileOpenEvent>
+#include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QImage>
 #include <QInputDialog>
@@ -261,16 +262,32 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
     // Back to the tab the user was in, so that is the one reopened in front next time.
     switchToTab(indexOf(current));
-    // The normal window size is the one to remember, not full screen.
+    // The normal window size is the one to remember, not full screen. (Leaving full screen
+    // finishes later on macOS, so take the size from before it started.)
+    const bool fromFocus = m_distractionFree;
     setDistractionFree(false);
     for (const auto &tab : m_tabs)
         rememberPosition(tab.get());
     rememberOpenTabs();
-    QSettings().setValue(QStringLiteral("geometry"), saveGeometry());
+    QSettings().setValue(QStringLiteral("geometry"), fromFocus ? m_geometryBeforeFocus : saveGeometry());
     // A normal close (saved, or "Don't save") leaves nothing to recover.
     for (const auto &tab : m_tabs)
         clearRecovery(tab.get());
     event->accept();
+}
+
+void MainWindow::changeEvent(QEvent *event)
+{
+    QMainWindow::changeEvent(event);
+    if (event->type() != QEvent::WindowStateChange || !m_distractionFree)
+        return;
+    // Left full screen some other way (the green button on macOS, a window manager key):
+    // bring the rest of the window back too. The offscreen platform the tests use doesn't keep
+    // the full-screen state at all, so it is left out.
+    if (windowState() & Qt::WindowFullScreen)
+        m_sawFullScreen = true;
+    else if (m_sawFullScreen && QGuiApplication::platformName() != QStringLiteral("offscreen"))
+        setDistractionFree(false);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -375,9 +392,9 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 QAction *MainWindow::addOption(QMenu *menu, const QString &text, const QString &tip, const QKeySequence &keys)
 {
     auto *action = menu->addAction(text);
-    // On the window too, so its shortcut still works while the menu bar is hidden
-    // (distraction-free mode).
-    addAction(action);
+    // Attached to the window too while distraction-free mode hides the menu bar, so its
+    // shortcut still works then (see setDistractionFree).
+    m_menuActions.append(action);
     action->setStatusTip(tip);
     action->setToolTip(tip);
     action->setShortcutContext(Qt::ApplicationShortcut);
@@ -818,10 +835,20 @@ void MainWindow::setDistractionFree(bool on)
     if (on) {
         m_editModeBeforeFocus = m_editMode;
         m_windowStateBeforeFocus = windowState();
+        m_geometryBeforeFocus = saveGeometry();
+        m_sawFullScreen = false;
         if (!m_editMode)
             setEditMode(true);
     }
     m_distractionFree = on;
+    // A hidden menu bar takes its shortcuts with it; the window holds them meanwhile. Only
+    // meanwhile: otherwise they would also work where the menu is disabled (Reader mode).
+    for (QAction *action : std::as_const(m_menuActions)) {
+        if (on)
+            addAction(action);
+        else
+            removeAction(action);
+    }
     // Buttons, tabs, preview, status line and menu go; only the writing pane stays. The tab
     // bar would show itself again when a tab opens, so its auto-hiding is paused meanwhile.
     m_fileBar->setVisible(!on && m_showButtons);

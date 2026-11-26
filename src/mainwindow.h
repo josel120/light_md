@@ -64,6 +64,7 @@ public:
 protected:
     void closeEvent(QCloseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void changeEvent(QEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -201,6 +202,10 @@ private:
     bool m_distractionFree = false;
     bool m_editModeBeforeFocus = true;
     Qt::WindowStates m_windowStateBeforeFocus;
+    QByteArray m_geometryBeforeFocus;
+    bool m_sawFullScreen = false;
+    // Every menu action with a shortcut-able entry (see addOption).
+    QList<QAction *> m_menuActions;
     bool m_syncScroll = true;
     bool m_syncingScroll = false;
     // True when the user last scrolled, clicked or typed in the reading pane; that pane then

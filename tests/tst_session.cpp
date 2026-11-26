@@ -414,6 +414,22 @@ private slots:
         QVERIFY(!window.m_editMode);
     }
 
+    void editingShortcutsStayOffInReader()
+    {
+        QSettings().clear();
+        ThemeManager themes;
+        MainWindow window(&themes);
+        showWindow(window);
+        window.m_editor->setPlainText(QString());
+        window.m_editor->insertPlainText(QStringLiteral("typed"));
+        // In and out of distraction-free mode once, then Reader: Ctrl+Z must not undo there.
+        window.setDistractionFree(true);
+        window.setDistractionFree(false);
+        window.setEditMode(false);
+        QTest::keyClick(&window, Qt::Key_Z, Qt::ControlModifier);
+        QCOMPARE(window.m_editor->toPlainText(), QStringLiteral("typed"));
+    }
+
     void startsFromReaderAndGoesBackToIt()
     {
         QSettings().clear();
