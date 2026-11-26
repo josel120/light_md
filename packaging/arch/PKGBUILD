@@ -3,7 +3,7 @@
 # Builds the v${pkgver} release from GitHub. For a new release, bump pkgver
 # and update sha256sums (run `updpkgsums` or `makepkg -g`).
 pkgname=light_md
-pkgver=1.3.0
+pkgver=1.4.0
 pkgrel=1
 pkgdesc="Lightweight Markdown editor with live preview"
 arch=('x86_64')
@@ -16,7 +16,7 @@ optdepends=('hunspell-en_us: English spell checking'
             'hunspell-de: German spell checking')
 makedepends=('cmake' 'ninja' 'pkgconf' 'qt6-base' 'qt6-tools')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('a284d15e745506983e50e28ed2665158b66e9a6f23e5d9608923dcb0e5dbfad6')
+sha256sums=('e591ebfd30778ef64a7ec9b8239ffad262e9a9c9e2f507019c81f66559604c26')
 
 build() {
   cmake -S "$srcdir/$pkgname-$pkgver" -B build -G Ninja \
