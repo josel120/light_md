@@ -107,6 +107,14 @@ jobs:
           QTEST_FUNCTION_TIMEOUT: '120000'
         run: ctest --test-dir build --output-on-failure -V
 
+      # The tests' own logs: they show the last test function that ran, even if ctest had to
+      # stop the program.
+      - name: Test logs
+        if: failure()
+        shell: bash
+        run: |
+          for log in build/tests/*.log; do echo "===== $log"; cat "$log"; done
+
       - name: Upload package
         if: runner.os != 'Linux'
         uses: actions/upload-artifact@v4
